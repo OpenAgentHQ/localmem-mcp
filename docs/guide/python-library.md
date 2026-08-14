@@ -69,15 +69,29 @@ results = store.search(
     limit=10,
     tags=["ops"],       # must carry ALL of these
     min_score=0.3,
+    offset=0,           # skip this many ranked results
 )
 
 for result in results:
     print(result.score, result.memory.id, result.memory.content)
 ```
 
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `query` | `str` | *required* | What you're trying to remember, in natural language. |
+| `limit` | `int` | `5` | Maximum memories to return. |
+| `tags` | `Iterable[str] \| str` | `None` | Only consider memories carrying **all** of these tags. |
+| `min_score` | `float` | `0.0` | Drop results scoring below this, on a 0–1 scale. |
+| `offset` | `int` | `0` | Skip this many ranked results before applying `limit`. |
+
 Each result is a `SearchResult` wrapping a `Memory` and a `score` — cosine
 similarity plus a bounded keyword bonus, on a 0–1 scale. See
 [How search works](how-search-works.md).
+
+`offset` is applied after ranking, so `search(q, limit=5, offset=5)` is the
+second page of `search(q, limit=5)`. Ranking is deterministic (score
+descending, ties broken by id), so pages neither overlap nor skip. Negative
+offsets are clamped to `0`, and an offset past the end returns `[]`.
 
 ## Reading, updating, and deleting
 

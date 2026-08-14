@@ -41,6 +41,7 @@ def search_memory(
     limit: int = 5,
     tags: list[str] | None = None,
     min_score: float = 0.0,
+    offset: int = 0,
 ) -> dict[str, Any]:
     """Find memories by meaning.
 
@@ -48,21 +49,27 @@ def search_memory(
     finds a memory that says "we went with SQLite". Results are ranked by
     similarity, highest first.
 
+    To page through more matches, keep the same query and advance `offset` by
+    `limit` — ranking is stable, so pages don't overlap or skip. An offset past
+    the last match returns no results.
+
     Args:
         query: What you are trying to remember, in natural language.
         limit: Maximum number of memories to return.
         tags: Only consider memories carrying all of these tags.
         min_score: Drop results scoring below this (0.0-1.0).
+        offset: Skip this many ranked results before returning `limit` of them.
 
     Returns:
         Matching memories with their similarity scores.
     """
     results = get_store().search(
-        query=query, limit=limit, tags=tags, min_score=min_score
+        query=query, limit=limit, tags=tags, min_score=min_score, offset=offset
     )
     return {
         "query": query,
         "count": len(results),
+        "offset": max(0, offset),
         "results": [result.to_dict() for result in results],
     }
 

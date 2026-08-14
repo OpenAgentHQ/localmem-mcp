@@ -152,6 +152,41 @@ async def test_list_memories_on_empty_store(mcp_server):
     assert result.data["total"] == 0
     assert result.data["memories"] == []
 
+async def test_search_memory_pages_with_offset(mcp_server):
+    async with Client(mcp_server) as client:
+        for text in [
+            "sqlite storage database",
+            "postgres database storage",
+            "database typing python",
+            "rust language typing",
+        ]:
+            await client.call_tool("store_memory", {"content": text})
+
+        everything = await client.call_tool(
+            "search_memory", {"query": "database storage", "limit": 4}
+        )
+        first = await client.call_tool(
+            "search_memory", {"query": "database storage", "limit": 2}
+        )
+        second = await client.call_tool(
+            "search_memory", {"query": "database storage", "limit": 2, "offset": 2}
+        )
+        past_end = await client.call_tool(
+            "search_memory", {"query": "database storage", "limit": 2, "offset": 99}
+        )
+
+    all_ids = [r["id"] for r in everything.data["results"]]
+    paged_ids = [r["id"] for r in first.data["results"]] + [
+        r["id"] for r in second.data["results"]
+    ]
+
+    assert paged_ids == all_ids
+    assert first.data["offset"] == 0
+    assert second.data["offset"] == 2
+    assert past_end.data["count"] == 0
+    assert past_end.data["results"] == []
+
+
 async def test_recall_missing_id_reports_not_found(mcp_server):
     async with Client(mcp_server) as client:
         result = await client.call_tool("recall_memory", {"memory_id": 9999})

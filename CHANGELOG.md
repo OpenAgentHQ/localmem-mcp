@@ -28,40 +28,14 @@ releases are cut.
 - `list` — browse memories by tag with pagination and newest/oldest ordering.
   Supports `--json` for machine-readable output.
 
+- `offset` on `MemoryStore.search()` and the `search_memory` MCP tool, applied
+  after ranking, so `limit=5, offset=5` returns results 6–10 without re-running
+  a search and discarding the first page. Ranking is deterministic, so pages
+  neither overlap nor skip. Negative offsets are clamped to `0`; an offset past
+  the end returns no results rather than an error. `search_memory` now also
+  echoes the `offset` it used.
+
 ## [0.1.1] — 2026-08-14
-
-### Added
-
-**MCP server**
-
-- `update_memory` — correct an existing memory in place. Changing `content`
-  re-embeds the memory so search finds the correction; a tag- or source-only
-  update leaves the vector alone. `created_at` is preserved, `updated_at`
-  refreshed, and a missing id returns `found: false` rather than raising.
-- `forget_memory` — permanently delete one memory by id. A missing id returns
-  `found: false` rather than raising.
-- `forget_memories` — permanently delete memories by tag and/or age, returning
-  the count removed. Requires at least one filter; an unfiltered call is
-  rejected so the store can't be wiped by accident.
-
-**Python library**
-
-- `MemoryStore.update()` — edit `content`, `tags`, or `source` on an existing
-  memory, re-embedding only when the content changes. Returns the corrected
-  `Memory`, or `None` for a missing id.
-- `MemoryStore.delete_many()` — bulk-delete memories by tag and/or age,
-  returning the number removed. Requires at least one filter so an unfiltered
-  call can't wipe the store. `MemoryStore.matching()` previews what a bulk
-  delete would remove without deleting.
-
-**CLI**
-
-- `forget` — delete a memory by id (`forget 7`), or bulk-delete by tag and/or
-  age (`forget --tag stale`, `forget --older-than 90d`). Bulk deletes preview
-  what will be removed and prompt for confirmation, with `--yes` to skip.
-
-## [0.1.0] — 2026-08-14
-
 First release.
 
 ### Added

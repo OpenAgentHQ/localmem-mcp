@@ -273,12 +273,19 @@ class MemoryStore:
         limit: int = 5,
         tags: Iterable[str] | str | None = None,
         min_score: float = 0.0,
+        offset: int = 0,
     ) -> list[SearchResult]:
         """Semantic search, nudged by exact keyword matches.
 
         Every stored memory is scored by cosine similarity against the query
         embedding; memories that also match the FTS5 index get a bounded
         keyword bonus so literal terms are not lost to paraphrase.
+
+        ``offset`` skips that many ranked results before ``limit`` is applied,
+        so ``limit=5, offset=5`` is the second page. Ranking is deterministic
+        (score descending, ties broken by id descending), so pages neither
+        overlap nor skip. Negative offsets are clamped to 0, and an offset past
+        the end returns an empty list rather than raising.
         """
         query = (query or "").strip()
         if not query:
@@ -309,7 +316,8 @@ class MemoryStore:
                 results.append(SearchResult(memory=memory, score=score))
 
         results.sort(key=lambda r: (-r.score, -r.memory.id))
-        return results[: max(1, limit)]
+        start = max(0, offset)
+        return results[start : start + max(1, limit)]
 
     def _keyword_hits(self, query: str) -> dict[int, float]:
         """Map memory id -> keyword score in [0, 1] using FTS5 bm25 ranking."""

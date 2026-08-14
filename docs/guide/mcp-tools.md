@@ -63,6 +63,7 @@ search_memory(
     limit: int = 5,
     tags: list[str] | None = None,
     min_score: float = 0.0,
+    offset: int = 0,
 ) -> dict
 ```
 
@@ -72,6 +73,7 @@ search_memory(
 | `limit` | `int` | `5` | Maximum memories to return. |
 | `tags` | `list[str]` | `None` | Only consider memories carrying **all** of these tags. |
 | `min_score` | `float` | `0.0` | Drop results scoring below this, on a 0–1 scale. |
+| `offset` | `int` | `0` | Skip this many ranked results before returning `limit` of them. |
 
 **Returns** matches ranked by similarity, highest first:
 
@@ -79,6 +81,7 @@ search_memory(
 {
   "query": "what database are we using?",
   "count": 1,
+  "offset": 0,
   "results": [
     {
       "id": 1,
@@ -106,6 +109,12 @@ no results rather than everything.
 
 Tag filtering is **conjunctive** — `tags=["work", "urgent"]` matches only
 memories carrying both.
+
+To page through more matches, repeat the search with the same `query` and
+advance `offset` by `limit` — `limit=5, offset=5` returns results 6–10. Ranking
+is deterministic (score descending, ties broken by id), so consecutive pages
+neither overlap nor skip. A negative offset is clamped to `0`, and an offset
+past the last match returns `"count": 0` rather than an error.
 
 ---
 
