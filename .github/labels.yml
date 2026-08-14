@@ -1,0 +1,111 @@
+# Issue and PR labels, synced by .github/workflows/labels.yml.
+#
+# Edit here rather than in the GitHub UI — a change made in the UI is reverted
+# the next time this file lands on main.
+
+# -- Type -------------------------------------------------------------------
+
+- name: bug
+  color: d73a4a
+  description: Something isn't working
+
+- name: enhancement
+  color: a2eeef
+  description: New feature or request
+
+- name: documentation
+  color: "0075ca"
+  description: Improvements or additions to documentation
+
+- name: question
+  color: d876e3
+  description: Further information is requested
+
+# -- Contributor signals ----------------------------------------------------
+
+- name: good first issue
+  color: 7057ff
+  description: Good for newcomers
+
+- name: help wanted
+  color: "008672"
+  description: Extra attention is needed
+
+- name: needs discussion
+  color: fef2c0
+  description: Direction isn't settled — comment before building
+
+- name: blocked
+  color: "000000"
+  description: Waiting on something else
+
+# -- Area -------------------------------------------------------------------
+
+- name: "area: mcp-tools"
+  color: 5b4bc4
+  description: The MCP tool surface and its docstrings
+
+- name: "area: storage"
+  color: 5b4bc4
+  description: SQLite schema, persistence, migrations
+
+- name: "area: search"
+  color: 5b4bc4
+  description: Ranking, embeddings, FTS5
+
+- name: "area: cli"
+  color: 5b4bc4
+  description: The localmem-mcp command line
+
+- name: "area: python-api"
+  color: 5b4bc4
+  description: MemoryStore and the importable library
+
+- name: "area: ci"
+  color: 5b4bc4
+  description: Workflows, packaging, release
+
+# -- Cross-cutting concerns -------------------------------------------------
+
+- name: privacy
+  color: "0e8a16"
+  description: Touches the no-network, no-API-key guarantee
+
+- name: performance
+  color: fbca04
+  description: Speed, memory use, scaling
+
+- name: security
+  color: b60205
+  description: Security-relevant change or report
+
+- name: breaking change
+  color: b60205
+  description: Breaks an MCP tool, the schema, the CLI, or the Python API
+
+- name: dependencies
+  color: "0366d6"
+  description: Dependency updates
+
+# -- Milestones as labels ---------------------------------------------------
+# Mirrors ROADMAP.md, so an issue's target is visible in list views.
+
+- name: "v0.2: lifecycle"
+  color: c5def5
+  description: Update, delete, list, export/import
+
+- name: "v0.3: scale"
+  color: c5def5
+  description: Benchmarks, vector index, batch embedding
+
+- name: "v0.4: contexts"
+  color: c5def5
+  description: Namespaces, dedup, decay, compaction
+
+- name: "v0.5: trust"
+  color: c5def5
+  description: Encryption, audit log, provenance, no-network proof
+
+- name: "v1.0: stability"
+  color: c5def5
+  description: Migrations, compatibility policy, API freeze
