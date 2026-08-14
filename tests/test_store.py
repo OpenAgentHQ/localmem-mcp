@@ -14,7 +14,7 @@ from collections.abc import Sequence
 
 import pytest
 
-from localmem_mcp.store import Memory, MemoryStore, _fts_query
+from localmem_mcp.store import Memory, MemoryStore, _days_ago, _fts_query
 
 VOCAB = [
     "sqlite", "database", "storage", "postgres",
@@ -144,6 +144,104 @@ def test_delete_removes_memory(store):
     assert store.delete(memory.id) is True
     assert store.get(memory.id) is None
     assert store.delete(memory.id) is False
+
+
+def test_delete_many_by_tag(store):
+    stale = store.add("stale decision", tags=["stale"])
+    keep = store.add("current note", tags=["current"])
+    store.add("another stale one", tags=["stale", "scratch"])
+
+    count = store.delete_many(tags=["stale"])
+
+    assert count == 2
+    assert store.get(stale.id) is None
+    assert store.get(keep.id) is not None
+
+
+def test_delete_many_by_age(store):
+    old = store.add("old note")
+    recent = store.add("recent note")
+    store._conn.execute(
+        "UPDATE memories SET created_at = ? WHERE id = ?",
+        (_days_ago(200), old.id),
+    )
+    store._conn.commit()
+
+    count = store.delete_many(older_than_days=90)
+
+    assert count == 1
+    assert store.get(old.id) is None
+    assert store.get(recent.id) is not None
+
+
+def test_delete_many_combines_tags_and_age(store):
+    old_stale = store.add("old stale note", tags=["stale"])
+    recent_stale = store.add("recent stale note", tags=["stale"])
+    old_other = store.add("old other note", tags=["other"])
+    store._conn.execute(
+        "UPDATE memories SET created_at = ? WHERE id IN (?, ?)",
+        (_days_ago(200), old_stale.id, old_other.id),
+    )
+    store._conn.commit()
+
+    count = store.delete_many(tags=["stale"], older_than_days=90)
+
+    assert count == 1
+    assert store.get(old_stale.id) is None
+    assert store.get(recent_stale.id) is not None
+    assert store.get(old_other.id) is not None
+
+
+def test_delete_many_requires_a_filter(store):
+    store.add("a note")
+
+    with pytest.raises(ValueError, match="at least one"):
+        store.delete_many()
+    with pytest.raises(ValueError, match="at least one"):
+        store.delete_many(tags=[])
+    with pytest.raises(ValueError, match="non-negative"):
+        store.delete_many(older_than_days=-1)
+
+    assert store.count() == 1  # nothing was wiped
+
+
+def test_delete_many_tag_matching_is_exact(store):
+    """'ops' must not match a memory tagged 'operations'."""
+    store.add("about operations", tags=["operations"])
+    store.add("about ops", tags=["ops"])
+
+    count = store.delete_many(tags=["ops"])
+
+    assert count == 1
+    assert store.count() == 1
+
+
+def test_matching_previews_what_delete_many_would_remove(store):
+    stale = store.add("stale one", tags=["stale"])
+    keep = store.add("keep me", tags=["current"])
+
+    matches = store.matching(tags=["stale"])
+
+    assert [m.id for m in matches] == [stale.id]
+    assert store.get(keep.id) is not None  # preview doesn't delete
+
+
+def test_delete_many_keeps_fts_index_consistent(store):
+    """The AFTER DELETE trigger must drop the FTS row too."""
+    stale = store.add("The deploy key is stored in the vault", tags=["stale"])
+    keep = store.add("Coffee is a drink")
+
+    assert store.search("deploy key")[0].memory.id == stale.id
+
+    store.delete_many(tags=["stale"])
+
+    results = store.search("deploy key")
+    assert all(r.memory.id != stale.id for r in results)
+    row = store._conn.execute(
+        "SELECT rowid FROM memories_fts WHERE rowid = ?", (stale.id,)
+    ).fetchone()
+    assert row is None
+    assert store.get(keep.id) is not None
 
 
 def test_update_content_reembeds_and_preserves_created_at(store):

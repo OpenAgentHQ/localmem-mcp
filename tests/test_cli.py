@@ -12,9 +12,10 @@ from __future__ import annotations
 import json
 
 import pytest
+from test_store import StubEmbedder
 
-from localmem_mcp.cli import _build_parser, _shared, main
-from localmem_mcp.store import DEFAULT_MODEL
+from localmem_mcp.cli import _build_parser, _days_arg, _shared, main
+from localmem_mcp.store import DEFAULT_MODEL, MemoryStore, _days_ago
 
 
 def _parse(argv: list[str]):
@@ -31,6 +32,8 @@ def _parse(argv: list[str]):
         ["--db", "/tmp/x.db", "add", "note"],
         ["add", "note", "--db", "/tmp/x.db"],
         ["--db", "/tmp/x.db", "recall"],
+        ["--db", "/tmp/x.db", "forget", "7"],
+        ["forget", "7", "--db", "/tmp/x.db"],
         ["--db", "/tmp/x.db", "serve"],
     ],
 )
@@ -116,3 +119,133 @@ def test_recall_missing_id_exits_nonzero(tmp_path, capsys):
     assert main(["--db", str(db), "recall", "999"]) == 1
 
     assert "no memory with id 999" in capsys.readouterr().err
+
+
+# -- forget ----------------------------------------------------------------
+#
+# The forget path never embeds, so these stay offline and fast. Memories are
+# seeded through a StubEmbedder store; the CLI then opens the same database.
+
+
+def _add_memory(db, content, tags=None):
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        return s.add(content, tags=tags)
+
+
+def test_days_arg_parses_durations():
+    assert _days_arg("30") == 30
+    assert _days_arg("90d") == 90
+    assert _days_arg("8w") == 56
+    assert _days_arg(" 7d ") == 7
+
+
+def test_days_arg_rejects_garbage():
+    from argparse import ArgumentTypeError
+
+    with pytest.raises(ArgumentTypeError):
+        _days_arg("soon")
+    with pytest.raises(ArgumentTypeError):
+        _days_arg("-1")
+
+
+def test_forget_single_id_deletes(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    memory = _add_memory(db, "temporary note")
+
+    assert main(["--db", str(db), "forget", str(memory.id)]) == 0
+
+    assert f"forgot #{memory.id}" in capsys.readouterr().out
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.get(memory.id) is None
+
+
+def test_forget_single_id_missing_exits_nonzero(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+
+    assert main(["--db", str(db), "forget", "999"]) == 1
+
+    assert "no memory with id 999" in capsys.readouterr().err
+
+
+def test_forget_bulk_previews_and_requires_confirmation(tmp_path, capsys, monkeypatch):
+    db = tmp_path / "cli.db"
+    memory = _add_memory(db, "stale note", tags=["stale"])
+    monkeypatch.setattr("builtins.input", lambda: "n")
+
+    assert main(["--db", str(db), "forget", "--tag", "stale"]) == 1
+
+    captured = capsys.readouterr()
+    assert "stale note" in captured.out  # preview shown before deleting
+    assert "aborted" in captured.err
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.get(memory.id) is not None  # nothing was deleted
+
+
+def test_forget_bulk_confirms_with_yes_input(tmp_path, capsys, monkeypatch):
+    db = tmp_path / "cli.db"
+    memory = _add_memory(db, "stale note", tags=["stale"])
+    monkeypatch.setattr("builtins.input", lambda: "y")
+
+    assert main(["--db", str(db), "forget", "--tag", "stale"]) == 0
+
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.get(memory.id) is None
+
+
+def test_forget_bulk_yes_flag_skips_prompt(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    memory = _add_memory(db, "stale note", tags=["stale"])
+
+    assert main(["--db", str(db), "forget", "--tag", "stale", "--yes"]) == 0
+
+    assert "forgot 1 memories" in capsys.readouterr().out
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.get(memory.id) is None
+
+
+def test_forget_bulk_by_age(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        old = s.add("ancient note")
+        s.add("fresh note")
+        s._conn.execute(
+            "UPDATE memories SET created_at = ? WHERE id = ?",
+            (_days_ago(200), old.id),
+        )
+        s._conn.commit()
+
+    assert main(["--db", str(db), "forget", "--older-than", "90d", "--yes"]) == 0
+
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.count() == 1
+        assert s.get(old.id) is None
+
+
+def test_forget_bulk_requires_a_filter(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    _add_memory(db, "keep me")
+
+    assert main(["--db", str(db), "forget"]) == 2
+
+    assert "at least one" in capsys.readouterr().err
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.count() == 1
+
+
+def test_forget_nothing_matches(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    _add_memory(db, "a note", tags=["current"])
+
+    assert main(["--db", str(db), "forget", "--tag", "stale"]) == 0
+
+    assert "nothing matches those filters" in capsys.readouterr().err
+
+
+def test_forget_bulk_json_output_is_parseable(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    _add_memory(db, "stale note", tags=["stale"])
+
+    assert main(["--db", str(db), "--json", "forget", "--tag", "stale", "--yes"]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {"deleted": True, "count": 1}

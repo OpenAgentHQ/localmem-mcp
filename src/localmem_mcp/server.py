@@ -1,4 +1,4 @@
-"""FastMCP server exposing localmem's four memory tools over stdio."""
+"""FastMCP server exposing localmem's memory tools over stdio."""
 
 from __future__ import annotations
 
@@ -17,7 +17,9 @@ mcp = FastMCP(
         "facts, decisions, and preferences worth remembering across sessions; "
         "search_memory to find them by meaning; recall_memory to re-read a "
         "specific memory or the most recent ones; update_memory to correct a "
-        "stored memory. Everything stays on this machine."
+        "stored memory; forget_memory or forget_memories to prune memories that "
+        "are stale, sensitive, or no longer wanted. Everything stays on this "
+        "machine."
     ),
 )
 
@@ -160,6 +162,54 @@ def update_memory(
     if memory is None:
         return {"found": False, "memory_id": memory_id, "memory": None}
     return {"found": True, "memory_id": memory_id, "memory": memory.to_dict()}
+
+
+@mcp.tool
+def forget_memory(memory_id: int) -> dict[str, Any]:
+    """Permanently delete one memory by id.
+
+    Use this when a stored memory is wrong beyond correction, sensitive, or
+    simply no longer wanted — prune it so stale facts stop outranking current
+    ones. To fix a memory instead of deleting it, use update_memory. The delete
+    is hard: the row is gone, not hidden.
+
+    Args:
+        memory_id: The id of the memory to delete, from a previous
+            store_memory or search_memory call.
+
+    Returns:
+        {"found": true, "memory_id": id} if it was deleted, or
+        {"found": false} if no such id exists.
+    """
+    deleted = get_store().delete(memory_id)
+    return {"found": deleted, "memory_id": memory_id}
+
+
+@mcp.tool
+def forget_memories(
+    tags: list[str] | None = None,
+    older_than_days: int | None = None,
+) -> dict[str, Any]:
+    """Permanently delete memories by tag and/or age.
+
+    Use this to prune stale facts en masse — drop every memory tagged
+    "scratch", or everything older than 90 days. At least one filter is
+    required; an unfiltered call is rejected so the store can't be wiped by
+    accident. Deletion is hard: matching rows are gone, not hidden.
+
+    Args:
+        tags: Only delete memories carrying all of these tags.
+        older_than_days: Only delete memories created more than this many days ago.
+
+    Returns:
+        The number of memories removed, along with the filters that matched them.
+    """
+    count = get_store().delete_many(tags=tags, older_than_days=older_than_days)
+    return {
+        "count": count,
+        "tags": list(tags) if tags else [],
+        "older_than_days": older_than_days,
+    }
 
 
 @mcp.tool

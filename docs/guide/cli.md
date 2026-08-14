@@ -92,6 +92,56 @@ Exits with status `1` if the id doesn't exist, so it's safe to use in scripts.
 
 ---
 
+## `forget`
+
+Delete a memory by id, or bulk-delete by tag and/or age.
+
+```bash
+localmem-mcp forget 7                 # one specific memory
+localmem-mcp forget --tag stale       # every memory tagged "stale"
+localmem-mcp forget --older-than 90d  # everything older than 90 days
+localmem-mcp forget --tag scratch --older-than 30d --yes
+```
+
+| Flag | Description |
+| --- | --- |
+| `memory_id` | Delete the single memory with this id. |
+| `--tag TAG` | Bulk-delete memories with this tag. Repeatable — all tags must match. |
+| `--older-than DURATION` | Bulk-delete memories older than this. Accepts `90`, `90d`, or `8w`. |
+| `--yes` | Skip the confirmation prompt for bulk deletes. |
+
+Single-id delete:
+
+```
+forgot #7
+```
+
+Bulk delete **shows what will be removed and asks before deleting** — deleting
+someone's memories on a typo is unforgivable:
+
+```
+#12 (2026-05-01T09:00:00+00:00) [stale] Old deploy notes
+#9  (2026-03-14T18:30:00+00:00) [stale] Abandoned experiment
+Delete 2 memories? [y/N]
+```
+
+Answer `y` to delete, anything else aborts without touching the store. Pass
+`--yes` to skip the prompt in scripts. A bulk call with **no filter at all**
+exits with status `2` rather than wiping the database.
+
+With `--json`, the result is a single machine-readable payload (the
+human-readable preview and prompt go to stderr):
+
+```bash
+localmem-mcp forget --tag stale --yes --json
+```
+
+```json
+{ "deleted": true, "count": 2 }
+```
+
+---
+
 ## `stats`
 
 Show the database location, memory count, and active model.
