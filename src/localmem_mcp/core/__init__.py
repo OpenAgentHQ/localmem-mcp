@@ -1,25 +1,19 @@
-"""Backward-compatible facade over :mod:`localmem_mcp.core`.
+"""Data layer: SQLite storage, embeddings, and hybrid search.
 
-The data layer now lives in the :mod:`localmem_mcp.core` package; this module
-re-exports the names that previously lived here so existing imports (docs,
-tests, and library users) keep working unchanged.
+The public names are re-exported here and at :mod:`localmem_mcp.store`, which
+is the backward-compatible facade the rest of the codebase imports.
 """
 
 from __future__ import annotations
 
-from .core import (
-    _SCHEMA,
-    DEFAULT_MODEL,
-    KEYWORD_WEIGHT,
-    Embedder,
-    FastEmbedEmbedder,
-    Memory,
-    MemoryStore,
-    SearchResult,
+from .embedders import DEFAULT_MODEL, Embedder, FastEmbedEmbedder
+from .models import Memory, SearchResult
+from .schema import _SCHEMA
+from .search import KEYWORD_WEIGHT, _cosine, _fts_query
+from .store import MemoryStore
+from .utils import (
     _bulk_filters,
-    _cosine,
     _days_ago,
-    _fts_query,
     _has_tags,
     _normalize_tags,
     _now,
