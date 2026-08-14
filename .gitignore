@@ -222,3 +222,6 @@ __marimo__/
 *.db-wal
 *.db-shm
 .localmem/
+
+# mkdocs
+site/
