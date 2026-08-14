@@ -18,18 +18,30 @@ from .store import DEFAULT_MODEL, MemoryStore, default_db_path
 def _build_parser() -> argparse.ArgumentParser:
     # Shared flags live on a parent parser so they work either before or after
     # the subcommand: `localmem-mcp --db x search q` and `search q --db x`.
+    #
+    # They default to SUPPRESS rather than a real value. A subparser writes into
+    # the same namespace as the main parser, so an ordinary default would
+    # overwrite a value already parsed from before the subcommand — silently
+    # sending `--db x stats` to the default database. With SUPPRESS an unset
+    # option writes nothing, and `_shared()` supplies the default instead.
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument(
         "--db",
         metavar="PATH",
+        default=argparse.SUPPRESS,
         help=f"SQLite database to use (default: {default_db_path()})",
     )
     common.add_argument(
         "--model",
-        default=DEFAULT_MODEL,
+        default=argparse.SUPPRESS,
         help=f"fastembed model name (default: {DEFAULT_MODEL})",
     )
-    common.add_argument("--json", action="store_true", help="Emit JSON instead of text")
+    common.add_argument(
+        "--json",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Emit JSON instead of text",
+    )
 
     parser = argparse.ArgumentParser(
         prog="localmem-mcp",
@@ -69,26 +81,36 @@ def _print(payload: object, as_json: bool, render) -> None:
         render()
 
 
+def _shared(args: argparse.Namespace) -> tuple[str | None, str, bool]:
+    """Read the shared flags, supplying the defaults SUPPRESS leaves out."""
+    return (
+        getattr(args, "db", None),
+        getattr(args, "model", DEFAULT_MODEL),
+        getattr(args, "json", False),
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
+    db_path, model_name, as_json = _shared(args)
     command = args.command or "serve"
 
     if command == "serve":
         from .server import configure, mcp
 
-        configure(db_path=args.db, model_name=args.model)
+        configure(db_path=db_path, model_name=model_name)
         mcp.run()
         return 0
 
-    store = MemoryStore(db_path=args.db, model_name=args.model)
+    store = MemoryStore(db_path=db_path, model_name=model_name)
 
     if command == "add":
         memory = store.add(content=args.content, tags=args.tags, source=args.source)
         _print(
             memory.to_dict(),
-            args.json,
+            as_json,
             lambda: print(f"stored #{memory.id}: {memory.content}"),
         )
 
@@ -105,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
             for result in results:
                 print(f"[{result.score:.3f}] #{result.memory.id} {result.memory.content}")
 
-        _print(payload, args.json, render)
+        _print(payload, as_json, render)
 
     elif command == "recall":
         if args.memory_id is not None:
@@ -125,13 +147,13 @@ def main(argv: list[str] | None = None) -> int:
                 tags = f" [{', '.join(memory.tags)}]" if memory.tags else ""
                 print(f"#{memory.id} ({memory.created_at}){tags} {memory.content}")
 
-        _print([m.to_dict() for m in memories], args.json, render)
+        _print([m.to_dict() for m in memories], as_json, render)
 
     elif command == "stats":
         stats = store.stats()
         _print(
             stats,
-            args.json,
+            as_json,
             lambda: print(
                 f"db: {stats['db_path']}\n"
                 f"memories: {stats['memories']}\n"

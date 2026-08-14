@@ -63,11 +63,17 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 
-      - name: Smoke-test the MCP server starts over stdio
+      - name: Smoke-test the installed CLI
         shell: bash
+        # Asserts the database path is actually honoured, not just that the
+        # command exits 0. A silently-ignored --db still exits 0, which is how
+        # it went unnoticed before.
         run: |
           python -c "import localmem_mcp; print(localmem_mcp.__version__)"
-          localmem-mcp --db "${RUNNER_TEMP}/smoke.db" stats
+          localmem-mcp --db "${RUNNER_TEMP}/smoke.db" stats | tee out.txt
+          grep -q "smoke.db" out.txt
+          localmem-mcp stats --db "${RUNNER_TEMP}/smoke.db" | tee out2.txt
+          grep -q "smoke.db" out2.txt
           localmem-mcp --db "${RUNNER_TEMP}/smoke.db" recall
 
   integration:
