@@ -44,9 +44,18 @@ dev = [
     "pytest-asyncio>=0.24",
     "ruff>=0.6",
 ]
+docs = [
+    # MkDocs 2.0 removes the plugin system entirely, which breaks Material,
+    # mkdocstrings, and every extension this site uses. Pin until there's a
+    # migration path.
+    "mkdocs>=1.6,<2.0",
+    "mkdocs-material>=9.5,<10",
+    "mkdocstrings[python]>=0.26",
+]
 
 [project.urls]
-Homepage = "https://github.com/OpenAgentHQ/localmem-mcp"
+Homepage = "https://openagenthq.github.io/localmem-mcp/"
+Documentation = "https://openagenthq.github.io/localmem-mcp/"
 Repository = "https://github.com/OpenAgentHQ/localmem-mcp"
 Issues = "https://github.com/OpenAgentHQ/localmem-mcp/issues"
 

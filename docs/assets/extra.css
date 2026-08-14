@@ -1,0 +1,39 @@
+/* Slightly warmer, calmer purple than Material's stock deep-purple. */
+:root {
+  --md-primary-fg-color: #5b4bc4;
+  --md-primary-fg-color--light: #7a6bd8;
+  --md-primary-fg-color--dark: #3f3390;
+  --md-accent-fg-color: #6f5ce0;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #8b7ce8;
+  --md-accent-fg-color: #a294f0;
+  --md-typeset-a-color: #a294f0;
+}
+
+/* The landing page's card grid. */
+.md-typeset .grid.cards > ul > li {
+  border-radius: 0.6rem;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0 0.6rem rgba(91, 75, 196, 0.12);
+}
+
+/* Tables read better centred and full-width in the reference pages. */
+.md-typeset table:not([class]) {
+  font-size: 0.72rem;
+}
+
+/* Keep mermaid diagrams from crowding the text around them. */
+.md-typeset .mermaid {
+  margin: 1.4em 0;
+}
+
+/* Tighten the generated API signatures a little. */
+.md-typeset .doc-signature {
+  font-size: 0.7rem;
+}

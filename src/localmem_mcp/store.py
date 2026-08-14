@@ -67,6 +67,7 @@ class Embedder(Protocol):
     name: str
 
     def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        """Return one vector per input text, all of the same length."""
         ...
 
 
@@ -96,6 +97,7 @@ class FastEmbedEmbedder:
         return self._model
 
     def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        """Embed texts locally, loading the model on the first call."""
         model = self._ensure_model()
         return [list(map(float, vec)) for vec in model.embed(list(texts))]
 
@@ -258,6 +260,7 @@ class MemoryStore:
         )
 
     def delete(self, memory_id: int) -> bool:
+        """Delete a memory. Returns True if it existed, False if it didn't."""
         with self._lock, self._conn:
             cursor = self._conn.execute(
                 "DELETE FROM memories WHERE id = ?", (memory_id,)
@@ -267,6 +270,7 @@ class MemoryStore:
     # -- reads ----------------------------------------------------------
 
     def get(self, memory_id: int) -> Memory | None:
+        """Fetch one memory by id, or None if there's no such memory."""
         row = self._conn.execute(
             "SELECT * FROM memories WHERE id = ?", (memory_id,)
         ).fetchone()
@@ -355,9 +359,11 @@ class MemoryStore:
         return {int(row["id"]): max(0.0, min(1.0, row["rank"] / best)) for row in rows}
 
     def count(self) -> int:
+        """Total number of stored memories."""
         return int(self._conn.execute("SELECT COUNT(*) FROM memories").fetchone()[0])
 
     def stats(self) -> dict[str, Any]:
+        """Database location, memory count, and the embedding model in use."""
         return {
             "db_path": str(self.db_path),
             "memories": self.count(),
@@ -367,6 +373,7 @@ class MemoryStore:
     # -- lifecycle ------------------------------------------------------
 
     def close(self) -> None:
+        """Close the underlying SQLite connection."""
         self._conn.close()
 
     def __enter__(self) -> MemoryStore:  # noqa: PYI034 - typing.Self needs 3.11
