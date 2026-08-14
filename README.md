@@ -9,9 +9,12 @@
 [![Python](https://img.shields.io/pypi/pyversions/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-server-blueviolet)](https://modelcontextprotocol.io)
+[![Docs](https://img.shields.io/badge/docs-openagenthq.github.io-5b4bc4)](https://openagenthq.github.io/localmem-mcp/)
 [![Local-first](https://img.shields.io/badge/cloud%20calls-zero-brightgreen)](#privacy)
 
 No cloud. No API keys. No per-call billing. Just SQLite and local embeddings.
+
+**[📖 Read the docs →](https://openagenthq.github.io/localmem-mcp/)**
 
 <!-- TODO: replace with demo.gif — agent stores a fact in one session, recalls it in the next -->
 <img src="docs/demo.gif" alt="localmem-mcp demo" width="720">
