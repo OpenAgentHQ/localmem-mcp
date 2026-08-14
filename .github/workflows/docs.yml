@@ -53,14 +53,20 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # Turns Pages on for the repository if it isn't already, and sets the
-      # source to GitHub Actions. Without this the deploy fails with a bare
-      # 404, which reads like a missing artifact rather than a settings
-      # problem. Safe to re-run — it's a no-op once Pages is enabled.
-      - name: Enable and configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      # Pages cannot be enabled from a workflow: GITHUB_TOKEN is refused with
+      # "Resource not accessible by integration", and actions/configure-pages
+      # with enablement: true fails the same way. It's a one-time manual
+      # setting. This check turns that into a single actionable line instead
+      # of a 404 from deploy-pages that reads like a missing artifact.
+      - name: Check Pages is enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh api "repos/${GITHUB_REPOSITORY}/pages" >/dev/null 2>&1; then
+            echo "::error title=GitHub Pages is not enabled::Enable it at https://github.com/${GITHUB_REPOSITORY}/settings/pages — set Source to 'GitHub Actions' — then re-run this workflow. It cannot be enabled automatically: the workflow token is not permitted to create a Pages site."
+            exit 1
+          fi
+          echo "Pages is enabled; deploying."
 
       - id: deployment
         uses: actions/deploy-pages@v4
