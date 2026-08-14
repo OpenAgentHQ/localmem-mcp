@@ -39,6 +39,7 @@ src/localmem_mcp/
     embedders.py  Embedder protocol, FastEmbedEmbedder, DEFAULT_MODEL
     schema.py     _SCHEMA DDL + FTS5 sync triggers
     search.py     _cosine, _fts_query, KEYWORD_WEIGHT
+    portability.py  JSONL import: import_records, ImportReport
     utils.py      tag/vector/row helpers, default_db_path, _days_ago
     store.py      MemoryStore class
   mcp/        MCP server. app.py (FastMCP instance + store lifecycle) and

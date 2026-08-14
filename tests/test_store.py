@@ -8,13 +8,14 @@ LOCALMEM_TEST_FASTEMBED=1 to require it).
 
 from __future__ import annotations
 
+import json
 import math
 import os
 from collections.abc import Sequence
 
 import pytest
 
-from localmem_mcp.store import Memory, MemoryStore, _days_ago, _fts_query
+from localmem_mcp.store import Memory, MemoryStore, _days_ago, _fts_query, import_records
 
 VOCAB = [
     "sqlite", "database", "storage", "postgres",
@@ -431,3 +432,175 @@ def test_fastembed_roundtrip(tmp_path):
         assert "SQLite" in results[0].memory.content
         assert 0.0 < results[0].score <= 1.0
         assert not math.isnan(results[0].score)
+
+
+# -- export and import -------------------------------------------------------
+
+
+def _jsonl(records) -> list[str]:
+    return [json.dumps(record) for record in records]
+
+
+def test_export_records_yields_every_memory_oldest_first(store):
+    store.add("sqlite storage", tags=["decision"], source="adr-1")
+    store.add("coffee in the morning")
+
+    records = list(store.export_records())
+
+    assert [r["content"] for r in records] == ["sqlite storage", "coffee in the morning"]
+    assert records[0]["tags"] == ["decision"]
+    assert records[0]["source"] == "adr-1"
+    assert "embedding" not in records[0]  # portable by default
+
+
+def test_export_records_filters_by_tag(store):
+    store.add("sqlite storage", tags=["decision", "storage"])
+    store.add("coffee in the morning", tags=["habit"])
+
+    records = list(store.export_records(tags=["decision"]))
+
+    assert [r["content"] for r in records] == ["sqlite storage"]
+
+
+def test_export_records_can_include_embeddings(store):
+    store.add("sqlite storage")
+
+    record = next(iter(store.export_records(with_embeddings=True)))
+
+    assert record["embedding_model"] == "stub-bow"
+    assert record["dim"] == len(record["embedding"]) == len(VOCAB)
+
+
+def test_contains_matches_exact_content(store):
+    store.add("sqlite storage")
+
+    assert store.contains("sqlite storage")
+    assert store.contains("  sqlite storage  ")  # same content, stray whitespace
+    assert not store.contains("sqlite")
+
+
+def test_add_can_preserve_an_original_timestamp(store):
+    memory = store.add("restored note", created_at="2024-01-02T03:04:05+00:00")
+
+    assert memory.created_at == "2024-01-02T03:04:05+00:00"
+    assert store.get(memory.id).updated_at == "2024-01-02T03:04:05+00:00"
+
+
+def test_round_trip_into_a_fresh_database(store, tmp_path):
+    store.add("sqlite storage", tags=["decision"], source="adr-1", metadata={"n": 1})
+    store.add("coffee in the morning", tags=["habit"])
+    exported = _jsonl(store.export_records())
+
+    with MemoryStore(db_path=tmp_path / "fresh.db", embedder=StubEmbedder()) as fresh:
+        report = import_records(fresh, exported)
+
+        assert report.imported == 2
+        assert report.errors == []
+        restored = list(fresh.export_records())
+
+    original = list(store.export_records())
+    # ids are reassigned by the importing database; everything else survives.
+    for before, after in zip(original, restored):
+        assert {k: v for k, v in before.items() if k != "id"} == {
+            k: v for k, v in after.items() if k != "id"
+        }
+
+
+def test_imported_memories_are_searchable(store, tmp_path):
+    store.add("we chose sqlite for storage")
+    exported = _jsonl(store.export_records())
+
+    with MemoryStore(db_path=tmp_path / "fresh.db", embedder=StubEmbedder()) as fresh:
+        import_records(fresh, exported)
+
+        # Re-embedded on the way in, so search works without the file's vectors.
+        assert fresh.search("database")[0].memory.content == "we chose sqlite for storage"
+
+
+def test_import_ignores_embeddings_in_the_file(store):
+    record = {"content": "sqlite storage", "embedding": [9.0] * len(VOCAB), "dim": len(VOCAB)}
+
+    import_records(store, [json.dumps(record)])
+
+    stored = next(iter(store.export_records(with_embeddings=True)))
+    assert stored["embedding_model"] == "stub-bow"
+    assert stored["embedding"] != [9.0] * len(VOCAB)
+
+
+def test_import_reports_malformed_lines_without_stopping(store):
+    lines = [
+        json.dumps({"content": "first"}),
+        "{not json at all",
+        json.dumps({"content": ""}),
+        json.dumps(["a list, not an object"]),
+        "",  # blank lines are ignored, not errors
+        json.dumps({"content": "last"}),
+    ]
+
+    report = import_records(store, lines)
+
+    assert report.imported == 2
+    assert report.failed == 3
+    assert [e.split(":")[0] for e in report.errors] == ["line 2", "line 3", "line 4"]
+    assert store.count() == 2
+
+
+@pytest.mark.parametrize(
+    "record, reason",
+    [
+        ({"content": "x", "tags": [1, 2]}, "tags"),
+        ({"content": "x", "tags": {"a": 1}}, "tags"),
+        ({"content": "x", "metadata": "nope"}, "metadata"),
+        ({"content": "x", "source": 7}, "source"),
+        ({"content": "x", "created_at": 2024}, "created_at"),
+    ],
+)
+def test_import_rejects_wrong_field_types(store, record, reason):
+    report = import_records(store, [json.dumps(record)])
+
+    assert report.imported == 0
+    assert reason in report.errors[0]
+
+
+def test_import_accepts_a_comma_separated_tag_string(store):
+    import_records(store, [json.dumps({"content": "x", "tags": "work,urgent"})])
+
+    assert store.recent()[0].tags == ["work", "urgent"]
+
+
+def test_import_skips_duplicates_by_default(store):
+    line = json.dumps({"content": "sqlite storage"})
+
+    first = import_records(store, [line])
+    second = import_records(store, [line, line])
+
+    assert first.imported == 1
+    assert second.imported == 0
+    assert second.skipped_duplicates == 2
+    assert store.count() == 1
+
+
+def test_import_can_allow_duplicates(store):
+    line = json.dumps({"content": "sqlite storage"})
+
+    import_records(store, [line])
+    report = import_records(store, [line], allow_duplicates=True)
+
+    assert report.imported == 1
+    assert store.count() == 2
+
+
+def test_import_dry_run_writes_nothing(store):
+    lines = [
+        json.dumps({"content": "first"}),
+        json.dumps({"content": "first"}),  # duplicate within the file
+        "{bad",
+    ]
+
+    report = import_records(store, lines, dry_run=True)
+
+    assert report.dry_run is True
+    assert report.imported == 1
+    assert report.skipped_duplicates == 1
+    assert report.failed == 1
+    assert store.count() == 0

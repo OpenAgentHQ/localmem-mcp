@@ -110,5 +110,41 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Skip the confirmation prompt for bulk deletes",
     )
 
+    export = sub.add_parser(
+        "export", parents=[common], help="Write memories to stdout as JSONL"
+    )
+    export.add_argument(
+        "--tag",
+        action="append",
+        dest="tags",
+        default=[],
+        help="Only export memories with this tag (repeatable — all must match)",
+    )
+    export.add_argument(
+        "--with-embeddings",
+        action="store_true",
+        help="Include the stored vectors (larger file, tied to one model)",
+    )
+
+    importer = sub.add_parser(
+        "import", parents=[common], help="Read JSONL and store each memory"
+    )
+    importer.add_argument(
+        "path",
+        nargs="?",
+        default="-",
+        help="JSONL file to read (default: - for stdin)",
+    )
+    importer.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Report what would be stored without writing anything",
+    )
+    importer.add_argument(
+        "--allow-duplicates",
+        action="store_true",
+        help="Store records whose content is already in the database",
+    )
+
     sub.add_parser("stats", parents=[common], help="Show database location and memory count")
     return parser

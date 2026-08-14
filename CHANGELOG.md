@@ -11,6 +11,36 @@ releases are cut.
 
 ### Added
 
+**CLI**
+
+- `export` — write memories to stdout as JSONL, one object per line, oldest
+  first. `--tag` filters conjunctively. Embeddings are excluded by default,
+  since a vector only means something on a machine running the same model;
+  `--with-embeddings` includes them along with `embedding_model` and `dim`.
+- `import` — read JSONL from a file or stdin and store each memory. Memories are
+  re-embedded rather than trusting vectors in the file, because a vector from
+  the wrong model isn't detectably wrong — search just stops matching. Original
+  `created_at` is preserved. Malformed lines are reported on stderr with their
+  line number and skipped, so a large import doesn't die on one bad record; the
+  exit status is `1` if any line failed. Records whose content already exists
+  are skipped unless `--allow-duplicates` is passed, so importing the same file
+  twice doesn't double the store, and `--dry-run` reports what would be stored
+  without writing.
+
+**Python library**
+
+- `MemoryStore.export_records()` — stream every memory as a plain dict, with the
+  same tag filter and optional embeddings as the CLI.
+- `import_records()` — read an iterable of JSONL lines into a store, returning
+  an `ImportReport` with the counts and per-line errors. Supports `dry_run` and
+  `allow_duplicates`.
+- `MemoryStore.contains()` — whether a memory with exactly this content is
+  already stored; the duplicate check the import path uses.
+- `MemoryStore.add()` takes an optional `created_at`, so a restored memory keeps
+  the day it was first recorded.
+
+**Search**
+
 - `offset` on `MemoryStore.search()` and the `search_memory` MCP tool, applied
   after ranking, so `limit=5, offset=5` returns results 6–10 without re-running
   a search and discarding the first page. Ranking is deterministic, so pages

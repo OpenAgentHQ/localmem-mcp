@@ -142,6 +142,113 @@ localmem-mcp forget --tag stale --yes --json
 
 ---
 
+## `export`
+
+Write memories to stdout as JSONL — one JSON object per line.
+
+```bash
+localmem-mcp export > memories.jsonl
+localmem-mcp export --tag work > work.jsonl
+localmem-mcp export --with-embeddings > backup.jsonl
+```
+
+| Flag | Description |
+| --- | --- |
+| `--tag TAG` | Only memories with **all** given tags. Repeatable. |
+| `--with-embeddings` | Include the stored vectors. |
+
+```json
+{"id": 7, "content": "Deploys go out on Thursdays", "tags": ["ops"], "source": null, "metadata": {}, "created_at": "2026-08-14T11:31:00+00:00", "updated_at": "2026-08-14T11:31:00+00:00"}
+```
+
+Records come out oldest first, and the output is always JSONL — `--json` has
+nothing to add. A single JSON array would defeat the point of a format you can
+stream, `grep`, and append to.
+
+**Embeddings are left out by default.** A vector is only meaningful on a machine
+running the same model, and the point of an export is to be portable — so the
+default file is human-readable and model-agnostic. `--with-embeddings` adds
+`embedding`, `embedding_model`, and `dim` to each record if you want a fuller
+backup; `import` ignores them either way (see below).
+
+---
+
+## `import`
+
+Read JSONL and store each memory.
+
+```bash
+localmem-mcp import memories.jsonl
+localmem-mcp import memories.jsonl --dry-run
+cat memories.jsonl | localmem-mcp import          # stdin is the default
+```
+
+| Flag | Description |
+| --- | --- |
+| `path` | JSONL file to read. Defaults to `-`, meaning stdin. |
+| `--dry-run` | Report what would be stored without writing anything. |
+| `--allow-duplicates` | Store records whose content is already in the database. |
+
+Only `content` is required. `tags`, `source`, `metadata`, and `created_at` are
+used when present; `id` is dropped, because the importing database assigns its
+own.
+
+```
+imported 2 memories, skipped 1 duplicates
+```
+
+A few behaviours are worth knowing:
+
+**Memories are re-embedded on the way in.** Vectors in the file are ignored,
+even with `--with-embeddings` in the export. The importing machine may be
+running a different model, and a vector from the wrong model isn't detectably
+wrong — search just quietly stops matching. Re-embedding costs a little time
+and removes that failure mode entirely.
+
+**`created_at` is preserved**, so an imported memory keeps the day it was first
+recorded rather than the day it was restored.
+
+**A bad line is skipped, not fatal.** Malformed records are reported on stderr
+with their line number and the import continues — a 10,000-line file shouldn't
+die on line 3. The exit status is `1` if any line failed, so scripts can still
+tell a clean import from a lossy one:
+
+```
+line 3: not valid JSON (Expecting ',' delimiter)
+line 47: missing or empty 'content'
+imported 9998 memories, 2 malformed lines
+```
+
+**Duplicates are skipped by default.** A record whose content already exists is
+counted and passed over, so importing the same file twice doesn't double your
+store. Pass `--allow-duplicates` if you actually want the second copy.
+
+With `--json`, the summary on stdout is a single parseable payload (the per-line
+errors stay on stderr):
+
+```json
+{
+  "imported": 2,
+  "skipped_duplicates": 1,
+  "failed": 0,
+  "dry_run": false,
+  "errors": []
+}
+```
+
+### Moving a database between machines
+
+```bash
+# on the old machine
+localmem-mcp export > memories.jsonl
+
+# on the new one — check first, then commit
+localmem-mcp import memories.jsonl --dry-run
+localmem-mcp import memories.jsonl
+```
+
+---
+
 ## `stats`
 
 Show the database location, memory count, and active model.
@@ -190,10 +297,10 @@ localmem-mcp search "deploys" -n 3 --json | jq -r '.[].content'
 
 # Every memory tagged "decision", newest first
 localmem-mcp recall -n 100 --json | jq -r '.[] | select(.tags[]? == "decision") | .content'
-
-# Back everything up as JSONL
-localmem-mcp recall -n 100000 --json | jq -c '.[]' > memories.jsonl
 ```
+
+To get every memory out as JSONL, use [`export`](#export) rather than a large
+`recall` — it streams, filters by tag, and is what `import` reads back.
 
 ---
 
