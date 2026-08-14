@@ -89,6 +89,9 @@ recent = store.recent(limit=10, tags=["ops"])
 updated = store.update(7, content="Priya prefers written updates over standups")
 store.update(7, tags=["team", "preference"])  # omit content to skip re-embedding
 store.delete(7)                    # True if it existed
+removed = store.delete_many(tags=["scratch"])        # int — count removed
+removed = store.delete_many(older_than_days=90)
+preview = store.matching(tags=["stale"])             # list[Memory] — what a bulk delete would remove
 store.count()                      # int
 store.stats()                      # {"db_path": …, "memories": …, "embedding_model": …}
 ```
@@ -98,6 +101,11 @@ omitting `content` leaves the embedding alone, so retagging is instant. Changing
 `content` re-embeds the memory so search finds the correction. `created_at` is
 preserved, `updated_at` is refreshed, and a missing id returns `None` rather
 than raising.
+
+`delete_many()` bulk-deletes by tag and/or age and requires at least one filter
+— an unfiltered call raises `ValueError` so the store can't be wiped by
+accident. `matching()` applies the same filters without deleting, so you can
+preview what `delete_many()` would remove first.
 
 ## Serializing
 
