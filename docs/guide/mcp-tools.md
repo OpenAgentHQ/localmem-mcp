@@ -168,7 +168,7 @@ list_memories(
     limit: int = 20,
     offset: int = 0,
     order: str = "newest",
-)-> dict
+) -> dict
 
 ```
 
@@ -205,9 +205,9 @@ details:
 
 !!! info "This is not a search tool"
 
-`list_memories` performs database filtering, ordering, and pagination only.
-It does **not** embed the query or calculate similarity, so it remains fast
-even when the embedding model has not been loaded.
+    `list_memories` performs database filtering, ordering, and pagination only.
+    It does **not** embed the query or calculate similarity, so it remains fast
+    even when the embedding model has not been loaded.
 
 ---
 
