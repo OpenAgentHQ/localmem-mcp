@@ -1,7 +1,8 @@
 # MCP tools
 
-localmem-mcp exposes five tools. Four are the core loop — store, search,
-recall, update — and one reports on the database itself.
+localmem-mcp exposes seven tools. Six are the core loop — store, search,
+recall, update, and the two forget tools — and one reports on the database
+itself.
 
 Tool descriptions are written for the model, not for you: each docstring says
 when to reach for the tool *and when not to*. That's why `recall_memory`
@@ -200,6 +201,78 @@ refreshed.
 
 ---
 
+## `forget_memory`
+
+Permanently delete one memory by id.
+
+```python
+forget_memory(
+    memory_id: int,
+) -> dict
+```
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `memory_id` | `int` | *required* | The id of the memory to delete. |
+
+**Returns** whether the memory existed:
+
+```json
+{ "found": true, "memory_id": 7 }
+```
+
+A missing id returns `found: false` rather than raising, so the agent can
+recover without a tool error:
+
+```json
+{ "found": false, "memory_id": 9999 }
+```
+
+!!! warning "This deletes, it doesn't correct"
+
+    Use `forget_memory` when a memory is wrong beyond correction, sensitive, or
+    simply no longer wanted. The delete is **hard** — the row is gone, not
+    hidden. To fix a memory instead, use [`update_memory`](#update_memory).
+
+---
+
+## `forget_memories`
+
+Permanently delete memories by tag and/or age.
+
+```python
+forget_memories(
+    tags: list[str] | None = None,
+    older_than_days: int | None = None,
+) -> dict
+```
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `tags` | `list[str]` | `None` | Only delete memories carrying **all** of these tags. |
+| `older_than_days` | `int` | `None` | Only delete memories created more than this many days ago. |
+
+**At least one filter is required.** An unfiltered call is rejected so the
+store can't be wiped by accident — a memory tool you can't prune becomes
+landfill, but one that deletes everything on a typo is worse.
+
+**Returns** the number of memories removed, plus the filters that matched them:
+
+```json
+{ "count": 12, "tags": ["scratch"], "older_than_days": null }
+```
+
+Deletion is hard: matching rows are gone, not hidden, and the FTS5 search index
+stays consistent automatically.
+
+!!! tip "Prune on a schedule"
+
+    Stale facts outrank current ones over time. A periodic
+    `forget_memories(older_than_days=90)` keeps the store honest without
+    touching anything recent.
+
+---
+
 ## `memory_stats`
 
 Report where memories are stored, how many there are, and which model is in use.
@@ -236,6 +309,8 @@ flowchart LR
     H --> C
     F -->|Wrong or stale| I[update_memory]
     I --> C
+    F -->|Wrong beyond correction,<br/>sensitive, or stale in bulk| J[forget_memory / forget_memories]
+    J --> C
 ```
 
 ## Writing memories that stay useful

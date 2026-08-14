@@ -17,12 +17,27 @@ releases are cut.
   re-embeds the memory so search finds the correction; a tag- or source-only
   update leaves the vector alone. `created_at` is preserved, `updated_at`
   refreshed, and a missing id returns `found: false` rather than raising.
+- `forget_memory` — permanently delete one memory by id. A missing id returns
+  `found: false` rather than raising.
+- `forget_memories` — permanently delete memories by tag and/or age, returning
+  the count removed. Requires at least one filter; an unfiltered call is
+  rejected so the store can't be wiped by accident.
 
 **Python library**
 
 - `MemoryStore.update()` — edit `content`, `tags`, or `source` on an existing
   memory, re-embedding only when the content changes. Returns the corrected
   `Memory`, or `None` for a missing id.
+- `MemoryStore.delete_many()` — bulk-delete memories by tag and/or age,
+  returning the number removed. Requires at least one filter so an unfiltered
+  call can't wipe the store. `MemoryStore.matching()` previews what a bulk
+  delete would remove without deleting.
+
+**CLI**
+
+- `forget` — delete a memory by id (`forget 7`), or bulk-delete by tag and/or
+  age (`forget --tag stale`, `forget --older-than 90d`). Bulk deletes preview
+  what will be removed and prompt for confirmation, with `--yes` to skip.
 
 ## [0.1.0] — 2026-08-14
 

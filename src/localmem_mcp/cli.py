@@ -9,10 +9,26 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+from typing import TextIO
 
 from . import __version__
 from .store import DEFAULT_MODEL, MemoryStore, default_db_path
+
+
+def _days_arg(value: str) -> int:
+    """Parse a duration like ``30``, ``90d``, or ``8w`` into days."""
+    text = str(value).strip().lower()
+    match = re.fullmatch(r"(\d+)([dw]?)", text)
+    if not match:
+        raise argparse.ArgumentTypeError(
+            f"invalid duration {value!r} (use e.g. 90, 90d, or 8w)"
+        )
+    days = int(match.group(1))
+    if match.group(2) == "w":
+        days *= 7
+    return days
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -69,6 +85,34 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     recall.add_argument("memory_id", nargs="?", type=int)
     recall.add_argument("-n", "--limit", type=int, default=5)
+
+    forget = sub.add_parser(
+        "forget",
+        parents=[common],
+        help="Delete a memory by id, or bulk-delete by tag and/or age",
+    )
+    forget.add_argument(
+        "memory_id",
+        nargs="?",
+        type=int,
+        help="Delete the single memory with this id",
+    )
+    forget.add_argument(
+        "--tag", action="append", dest="tags", default=[], help="Bulk-delete memories with this tag (repeatable)"
+    )
+    forget.add_argument(
+        "--older-than",
+        dest="older_than",
+        type=_days_arg,
+        default=None,
+        metavar="DURATION",
+        help="Bulk-delete memories older than this (e.g. 90, 90d, or 8w)",
+    )
+    forget.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip the confirmation prompt for bulk deletes",
+    )
 
     sub.add_parser("stats", parents=[common], help="Show database location and memory count")
     return parser
@@ -148,6 +192,57 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"#{memory.id} ({memory.created_at}){tags} {memory.content}")
 
         _print([m.to_dict() for m in memories], as_json, render)
+
+    elif command == "forget":
+        if args.memory_id is not None:
+            deleted = store.delete(args.memory_id)
+            if not deleted:
+                print(f"no memory with id {args.memory_id}", file=sys.stderr)
+                return 1
+            _print(
+                {"deleted": True, "memory_id": args.memory_id},
+                as_json,
+                lambda: print(f"forgot #{args.memory_id}"),
+            )
+            return 0
+
+        # Bulk delete: preview what matches, then confirm before deleting.
+        try:
+            matches = store.matching(tags=args.tags, older_than_days=args.older_than)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+
+        if not matches:
+            print("nothing matches those filters", file=sys.stderr)
+            return 0
+
+        def render_preview(stream: TextIO) -> None:
+            for memory in matches:
+                tags = f" [{', '.join(memory.tags)}]" if memory.tags else ""
+                print(f"#{memory.id} ({memory.created_at}){tags} {memory.content}", file=stream)
+
+        if as_json:
+            # Keep stdout machine-readable: the human-readable preview and the
+            # confirmation prompt go to stderr, so the result on stdout stays a
+            # single JSON document a script can parse.
+            render_preview(sys.stderr)
+        else:
+            render_preview(sys.stdout)
+
+        if not args.yes:
+            print(f"Delete {len(matches)} memories? [y/N] ", file=sys.stderr, end="", flush=True)
+            answer = input().strip().lower()
+            if answer not in ("y", "yes"):
+                print("aborted", file=sys.stderr)
+                return 1
+
+        count = store.delete_many(tags=args.tags, older_than_days=args.older_than)
+        _print(
+            {"deleted": True, "count": count},
+            as_json,
+            lambda: print(f"forgot {count} memories"),
+        )
 
     elif command == "stats":
         stats = store.stats()

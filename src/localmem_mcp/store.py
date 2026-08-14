@@ -15,7 +15,7 @@ import sqlite3
 import threading
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -143,6 +143,11 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _days_ago(days: int) -> str:
+    """ISO timestamp for ``days`` before now, for age-based filtering."""
+    return (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(timespec="seconds")
+
+
 def _normalize_tags(tags: Iterable[str] | str | None) -> list[str]:
     if tags is None:
         return []
@@ -188,6 +193,33 @@ def _fts_query(text: str) -> str:
     """
     words = [w for w in "".join(c if c.isalnum() else " " for c in text).split() if w]
     return " OR ".join(f'"{w}"' for w in words)
+
+
+def _bulk_filters(
+    tags: Iterable[str] | str | None, older_than_days: int | None
+) -> tuple[str, list[Any]]:
+    """Validate bulk-delete filters and return ``(where_sql, params)``.
+
+    Bulk deletion must be scoped: at least one of ``tags`` or
+    ``older_than_days`` is required, otherwise a typo could wipe the whole
+    store. Tags are matched conjunctively against the CSV ``tags`` column with
+    padded commas so ``ops`` can't match ``operations``.
+    """
+    tag_list = _normalize_tags(tags)
+    if not tag_list and older_than_days is None:
+        raise ValueError("at least one of tags or older_than_days is required")
+    if older_than_days is not None and older_than_days < 0:
+        raise ValueError("older_than_days must be non-negative")
+
+    clauses: list[str] = []
+    params: list[Any] = []
+    for tag in tag_list:
+        clauses.append("(',' || tags || ',') LIKE ?")
+        params.append(f"%,{tag},%")
+    if older_than_days is not None:
+        clauses.append("created_at < ?")
+        params.append(_days_ago(older_than_days))
+    return " AND ".join(clauses), params
 
 
 class MemoryStore:
@@ -318,6 +350,41 @@ class MemoryStore:
                 "DELETE FROM memories WHERE id = ?", (memory_id,)
             )
         return cursor.rowcount > 0
+
+    def matching(
+        self,
+        tags: Iterable[str] | str | None = None,
+        older_than_days: int | None = None,
+    ) -> list[Memory]:
+        """Memories a bulk delete would remove, newest first.
+
+        Same filters as :meth:`delete_many`, without deleting — the CLI uses
+        this to show what ``forget --tag stale`` would remove before asking.
+        """
+        where, params = _bulk_filters(tags, older_than_days)
+        rows = self._conn.execute(
+            f"SELECT * FROM memories WHERE {where} ORDER BY id DESC", params
+        ).fetchall()
+        return [_row_to_memory(row) for row in rows]
+
+    def delete_many(
+        self,
+        tags: Iterable[str] | str | None = None,
+        older_than_days: int | None = None,
+    ) -> int:
+        """Bulk-delete memories matching all given tags and/or age.
+
+        Requires at least one of ``tags`` or ``older_than_days``; an unfiltered
+        call raises :class:`ValueError` so the store can't be wiped by accident.
+        Deletion is hard — rows are gone, not hidden — and the FTS5 index stays
+        in sync via the AFTER DELETE trigger. Returns the number removed.
+        """
+        where, params = _bulk_filters(tags, older_than_days)
+        with self._lock, self._conn:
+            cursor = self._conn.execute(
+                f"DELETE FROM memories WHERE {where}", params
+            )
+        return cursor.rowcount
 
     # -- reads ----------------------------------------------------------
 
