@@ -13,6 +13,11 @@ hide:
 
 <p class="lm-lede"><strong>localmem-mcp</strong> gives your agent persistent memory backed by SQLite and on-device embeddings. No cloud, no keys, no per-call billing — and after one model download, no network at all.</p>
 
+<div class="lm-badges" markdown>
+[![PyPI - Version](https://img.shields.io/pypi/v/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
+[![PyPI - Python Versions](https://img.shields.io/pypi/pyversions/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
+</div>
+
 <div class="lm-actions" markdown>
 [Get started](getting-started/quickstart.md){ .md-button .md-button--primary }
 [How search works](guide/how-search-works.md){ .md-button }

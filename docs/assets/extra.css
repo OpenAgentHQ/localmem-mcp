@@ -467,6 +467,19 @@ pre {
   margin: 0;
 }
 
+/* Badge row under the lede. */
+.lm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1.6rem;
+}
+
+.lm-badges img {
+  border-radius: 4px;
+}
+
 /* Terminal card. */
 .lm-term {
   margin: 2rem 0 0;
