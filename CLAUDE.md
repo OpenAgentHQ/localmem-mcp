@@ -53,6 +53,7 @@ src/localmem_mcp/
 tests/
   test_store.py   store behaviour, against a deterministic stub embedder
   test_server.py  MCP tools end-to-end via fastmcp's in-memory Client
+benchmarks/   run.py — add/search latency harness; RESULTS.md — committed numbers
 docs/         MkDocs Material site, published to GitHub Pages from main
 mkdocs.yml    site config
 ```

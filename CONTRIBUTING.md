@@ -102,6 +102,43 @@ For MCP-level tests, drive the tools through `fastmcp.Client(server)` as
 catches schema and serialization problems that calling the functions directly
 would miss.
 
+## Benchmarks
+
+Performance claims in this project should come with numbers. `benchmarks/run.py`
+measures `add()` and `search()` at a range of corpus sizes:
+
+```bash
+.venv/bin/python benchmarks/run.py --sizes 1000,10000,100000
+```
+
+It generates a deterministic synthetic corpus of memory-length prose (10–50
+words), reports **p50 and p95** for both operations, and splits each timing into
+embedding, SQLite, and scoring so you can see which one actually dominates. It
+also reports database size on disk per tier.
+
+By default it runs against a stub embedder that produces vectors of the same
+width as the real model, so the numbers isolate *our* code rather than ONNX
+inference. Add `--real` for end-to-end figures with the shipped model.
+
+Useful flags:
+
+| Flag | What it does |
+| --- | --- |
+| `--sizes 1000,10000` | corpus sizes to measure (default `1000,10000,100000`) |
+| `--queries 50` | how many searches to time per size |
+| `--real` | use the real fastembed model instead of the stub |
+| `--format markdown` | emit a table for pasting into an issue (`text`, `markdown`, `json`) |
+| `--db-dir DIR` | keep the benchmark databases instead of using a temp dir |
+| `--seed 1234` | corpus seed — same seed, same corpus |
+
+100k with the default 50 queries takes a while, because search at that size is
+seconds per query; `--queries 10` is enough for a stable p50 there.
+
+Committed results, with the machine they came from, live in
+[`benchmarks/RESULTS.md`](benchmarks/RESULTS.md). If you change anything on the
+search path, re-run the harness and update that file in the same PR — including
+the machine spec, since absolute numbers are only comparable within one machine.
+
 ## Style
 
 - Type hints throughout, with `from __future__ import annotations` at the top.
