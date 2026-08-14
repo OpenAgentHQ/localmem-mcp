@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="localmem-mcp — give your AI agent a memory that never leaves your machine">
+  <title>localmem-mcp</title>
+  <desc>Social preview card: local-first memory for AI agents, backed by SQLite and on-device embeddings.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141310"/>
+      <stop offset="0.55" stop-color="#1a1815"/>
+      <stop offset="1" stop-color="#12110f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b8552f"/>
+      <stop offset="1" stop-color="#e5a077"/>
+    </linearGradient>
+    <linearGradient id="cyl" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c9622f"/>
+      <stop offset="1" stop-color="#8f421f"/>
+    </linearGradient>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e08a63" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#e08a63"/>
+      <stop offset="1" stop-color="#e08a63" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e08a63" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#e08a63" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#f5f2ea" opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="640" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1280" height="640" fill="url(#dots)"/>
+  <ellipse cx="640" cy="250" rx="520" ry="360" fill="url(#glow)"/>
+
+  <g text-anchor="middle" font-family="Inter, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+    <text x="640" y="146" font-size="16" font-weight="600" letter-spacing="4" fill="#9b978d">MCP SERVER · PYTHON LIBRARY</text>
+    <text x="640" y="252" font-size="86" font-weight="700" letter-spacing="-2.4" fill="#f5f2ea">localmem-mcp</text>
+    <text x="640" y="318" font-size="30" font-weight="500" fill="#cbc5b8">Give your AI agent a memory that never leaves your machine.</text>
+    <text x="640" y="356" font-size="21" fill="#8e8a80">No cloud. No API keys. No per-call billing.</text>
+  </g>
+
+  <!-- capability chips, centred as one row -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="15">
+    <g>
+      <rect x="379" y="392" width="160" height="40" rx="20" fill="#1e1c19" stroke="#35332d"/>
+      <circle cx="401" cy="412" r="3.5" fill="#e08a63"/>
+      <text x="414" y="417" fill="#d5cfc2">SQLite + FTS5</text>
+    </g>
+    <g>
+      <rect x="553" y="392" width="220" height="40" rx="20" fill="#1e1c19" stroke="#35332d"/>
+      <circle cx="575" cy="412" r="3.5" fill="#e08a63"/>
+      <text x="588" y="417" fill="#d5cfc2">on-device embeddings</text>
+    </g>
+    <g>
+      <rect x="787" y="392" width="152" height="40" rx="20" fill="#1e1c19" stroke="#35332d"/>
+      <circle cx="809" cy="412" r="3.5" fill="#e08a63"/>
+      <text x="822" y="417" fill="#d5cfc2">100% offline</text>
+    </g>
+  </g>
+
+  <!-- one file, on your own disk -->
+  <g>
+    <rect x="360" y="470" width="560" height="130" rx="16" fill="#191714" stroke="#332f29"/>
+    <circle cx="388" cy="500" r="4" fill="#3d3931"/>
+    <circle cx="404" cy="500" r="4" fill="#3d3931"/>
+    <circle cx="420" cy="500" r="4" fill="#3d3931"/>
+    <text x="440" y="505" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="13" fill="#7c786f">~/.localmem/memories.db</text>
+    <line x1="360" y1="522" x2="920" y2="522" stroke="#282520"/>
+
+    <g>
+      <path d="M392 548 v30 a30 9 0 0 0 60 0 v-30 z" fill="url(#cyl)"/>
+      <ellipse cx="422" cy="548" rx="30" ry="9" fill="#e5a077"/>
+      <ellipse cx="422" cy="566" rx="30" ry="9" fill="none" stroke="#f5f2ea" stroke-opacity="0.16"/>
+    </g>
+
+    <g>
+      <rect x="480" y="547" width="410" height="12" rx="6" fill="#242119"/>
+      <rect x="480" y="547" width="338" height="12" rx="6" fill="url(#accent)"/>
+      <rect x="480" y="571" width="410" height="12" rx="6" fill="#242119"/>
+      <rect x="480" y="571" width="228" height="12" rx="6" fill="url(#accent)" opacity="0.7"/>
+    </g>
+  </g>
+</svg>
