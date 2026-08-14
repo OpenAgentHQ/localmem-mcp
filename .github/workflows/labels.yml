@@ -1,0 +1,56 @@
+name: labels
+
+# Keeps the repository's labels in sync with .github/labels.yml, so the label
+# set is reviewable in a PR rather than edited by hand in the UI.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/labels.yml
+      - .github/workflows/labels.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Sync labels
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Apply labels.yml
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Creates labels that don't exist and updates colour/description on
+        # those that do. Deliberately does not delete labels missing from the
+        # file — removing a label strips it from every issue carrying it, which
+        # is not something a config sync should do silently.
+        run: |
+          python -m pip install --quiet pyyaml
+
+          python - <<'PY' > labels.json
+          import json, yaml
+          print(json.dumps(yaml.safe_load(open(".github/labels.yml"))))
+          PY
+
+          python - <<'PY' > apply.sh
+          import json
+          rows = json.load(open("labels.json"))
+          lines = []
+          for row in rows:
+              name = row["name"].replace("'", "'\\''")
+              color = str(row["color"]).lstrip("#")
+              desc = row.get("description", "").replace("'", "'\\''")
+              lines.append(
+                  f"gh label create '{name}' --color '{color}' --description '{desc}' --force"
+              )
+          print("\n".join(lines))
+          PY
+
+          bash apply.sh
+          echo "Synced $(python -c 'import json;print(len(json.load(open("labels.json"))))') labels."
