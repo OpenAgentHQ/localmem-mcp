@@ -22,6 +22,8 @@ sentence true.
 4. **Install-to-working under 30 seconds.** Weigh every new dependency against
    that. `fastembed` was chosen over `sentence-transformers` precisely for
    install size and cold-start time — don't swap it back.
+5. **New task, new branch, new PR.** Never continue an existing PR's branch to
+   do unrelated work. See [Branching and PRs](#branching-and-prs).
 
 ## Layout
 
@@ -57,6 +59,39 @@ with `mkdocs serve` after `pip install -e ".[docs]"`; CI builds it with
   not at import, so MCP clients that spawn the server eagerly don't stall.
 - **Embedder is injectable.** `MemoryStore(embedder=...)` accepts anything with
   `.name` and `.embed(texts)`. That's how the tests stay offline and fast.
+
+## Branching and PRs
+
+**Every task gets its own branch and its own PR. No exceptions.**
+
+Start each new piece of work — a feature, a fix, a docs change, a one-line typo
+— by cutting a fresh branch:
+
+```bash
+git checkout -b claude/<short-description>
+```
+
+When the work is done, push that branch and open a **new** PR for it.
+
+Never add commits to a branch that already has an open PR in order to
+accomplish a *different* task. If a task is finished and a new request comes in,
+that request is new work: new branch, new PR. Pushing it onto the existing
+branch silently changes what reviewers already agreed to look at, and couples
+two unrelated changes into one merge decision.
+
+Follow-up commits to an existing PR are only for that PR's own work — addressing
+review feedback, fixing its CI, or completing something it left unfinished.
+
+When new work builds on a branch that hasn't merged yet, branch off that branch
+and target it as the PR base. The stacked PR then shows only the new diff, and
+GitHub retargets it to `main` automatically once the parent merges.
+
+```bash
+git checkout -b claude/new-thing            # from the unmerged parent branch
+# open the PR with base: <parent-branch>, not main
+```
+
+Never push to `main` directly, and never force-push a branch with an open PR.
 
 ## Working on it
 
