@@ -91,6 +91,8 @@ localmem-mcp add "Deploys go out on Thursdays" --tag ops
 localmem-mcp search "when do we ship?"
 localmem-mcp recall -n 5
 localmem-mcp stats
+localmem-mcp export > memories.jsonl     # take your memories elsewhere
+localmem-mcp import memories.jsonl
 ```
 
 ## Privacy

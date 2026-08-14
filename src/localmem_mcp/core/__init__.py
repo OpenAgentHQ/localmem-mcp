@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from .embedders import DEFAULT_MODEL, Embedder, FastEmbedEmbedder
 from .models import Memory, SearchResult
+from .portability import ImportReport, import_records
 from .schema import _SCHEMA
 from .search import KEYWORD_WEIGHT, _cosine, _fts_query
 from .store import MemoryStore
@@ -29,6 +30,7 @@ __all__ = [
     "_SCHEMA",
     "Embedder",
     "FastEmbedEmbedder",
+    "ImportReport",
     "Memory",
     "MemoryStore",
     "SearchResult",
@@ -43,4 +45,5 @@ __all__ = [
     "_row_to_memory",
     "_unpack",
     "default_db_path",
+    "import_records",
 ]

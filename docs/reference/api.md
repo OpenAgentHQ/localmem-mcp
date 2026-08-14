@@ -18,6 +18,14 @@ For task-oriented examples, see the [Python library guide](../guide/python-libra
 
 ::: localmem_mcp.store.SearchResult
 
+::: localmem_mcp.store.ImportReport
+
+---
+
+## Import
+
+::: localmem_mcp.store.import_records
+
 ---
 
 ## Embedders

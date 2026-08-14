@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -59,15 +59,22 @@ class MemoryStore:
         tags: Iterable[str] | str | None = None,
         source: str | None = None,
         metadata: dict[str, Any] | None = None,
+        created_at: str | None = None,
     ) -> Memory:
-        """Embed and persist a memory. Returns the stored record."""
+        """Embed and persist a memory. Returns the stored record.
+
+        ``created_at`` overrides the timestamp used for both ``created_at`` and
+        ``updated_at``, which is what an import needs: a memory restored from a
+        JSONL file should keep the day it was first recorded, not the day it was
+        restored. Leave it unset for normal writes.
+        """
         content = (content or "").strip()
         if not content:
             raise ValueError("content must not be empty")
 
         tag_list = _normalize_tags(tags)
         vector = self.embedder.embed([content])[0]
-        timestamp = _now()
+        timestamp = created_at or _now()
 
         with self._lock, self._conn:
             cursor = self._conn.execute(
@@ -292,6 +299,53 @@ class MemoryStore:
         if best == 0:
             return {int(row["id"]): 1.0 for row in rows}
         return {int(row["id"]): max(0.0, min(1.0, row["rank"] / best)) for row in rows}
+
+    def contains(self, content: str) -> bool:
+        """Whether a memory with exactly this content is already stored.
+
+        Content equality is how the import path recognises a re-import, which
+        is deliberately cruder than semantic similarity: a duplicate here means
+        the same text, not merely a memory that means the same thing.
+        """
+        content = (content or "").strip()
+        if not content:
+            return False
+        row = self._conn.execute(
+            "SELECT 1 FROM memories WHERE content = ? LIMIT 1", (content,)
+        ).fetchone()
+        return row is not None
+
+    def export_records(
+        self,
+        tags: Iterable[str] | str | None = None,
+        with_embeddings: bool = False,
+    ) -> Iterator[dict[str, Any]]:
+        """Yield every memory as a plain dict, oldest first.
+
+        The shape matches :meth:`Memory.to_dict`, so an exported record is the
+        same structure ``--json`` already prints. ``tags`` filters
+        conjunctively, like :meth:`search`.
+
+        Embeddings are left out unless ``with_embeddings`` is set: a vector is
+        only meaningful to a machine running the same model, and the point of
+        an export is to be portable. When included, each record also carries
+        ``embedding_model`` and ``dim`` so a reader can tell what produced it.
+
+        Rows are streamed rather than materialised, so exporting a large store
+        doesn't build the whole file in memory first.
+        """
+        tag_list = _normalize_tags(tags)
+        cursor = self._conn.execute("SELECT * FROM memories ORDER BY id")
+        for row in cursor:
+            memory = _row_to_memory(row)
+            if tag_list and not _has_tags(memory, tag_list):
+                continue
+            record = memory.to_dict()
+            if with_embeddings:
+                record["embedding"] = _unpack(row["embedding"]) if row["embedding"] else None
+                record["embedding_model"] = row["embedding_model"]
+                record["dim"] = row["dim"]
+            yield record
 
     def count(self) -> int:
         """Total number of stored memories."""

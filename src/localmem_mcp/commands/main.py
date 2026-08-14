@@ -10,7 +10,15 @@ from __future__ import annotations
 import argparse
 
 from ..core import DEFAULT_MODEL, MemoryStore
-from .handlers import handle_add, handle_forget, handle_recall, handle_search, handle_stats
+from .handlers import (
+    handle_add,
+    handle_export,
+    handle_forget,
+    handle_import,
+    handle_recall,
+    handle_search,
+    handle_stats,
+)
 from .parser import _build_parser
 
 
@@ -43,6 +51,8 @@ def main(argv: list[str] | None = None) -> int:
         "search": handle_search,
         "recall": handle_recall,
         "forget": handle_forget,
+        "export": handle_export,
+        "import": handle_import,
         "stats": handle_stats,
     }
     exit_code = handlers[command](store, args, as_json)

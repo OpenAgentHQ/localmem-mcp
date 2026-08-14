@@ -9,7 +9,9 @@ Most of what's here guards that.
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 
 import pytest
 from test_store import StubEmbedder
@@ -249,3 +251,151 @@ def test_forget_bulk_json_output_is_parseable(tmp_path, capsys):
 
     payload = json.loads(capsys.readouterr().out)
     assert payload == {"deleted": True, "count": 1}
+
+
+# -- export and import -------------------------------------------------------
+#
+# The CLI builds its own store, which would reach for fastembed. `_offline`
+# swaps in the StubEmbedder so these stay fast and offline like the rest.
+
+
+@pytest.fixture
+def _offline(monkeypatch):
+    def _store(db_path=None, model_name=None):
+        return MemoryStore(db_path=db_path, embedder=StubEmbedder())
+
+    # Fetch the module out of sys.modules rather than by dotted name: the
+    # package re-exports `main` as a function, which shadows the submodule of
+    # the same name for both `import` and monkeypatch's string lookup.
+    monkeypatch.setattr(sys.modules["localmem_mcp.commands.main"], "MemoryStore", _store)
+
+
+def test_export_writes_one_json_object_per_line(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    _add_memory(db, "first note", tags=["work"])
+    _add_memory(db, "second note")
+
+    assert main(["--db", str(db), "export"]) == 0
+
+    lines = capsys.readouterr().out.strip().splitlines()
+    assert [json.loads(line)["content"] for line in lines] == ["first note", "second note"]
+    assert json.loads(lines[0])["tags"] == ["work"]
+
+
+def test_export_filters_by_tag(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    _add_memory(db, "work note", tags=["work"])
+    _add_memory(db, "home note", tags=["home"])
+
+    assert main(["--db", str(db), "export", "--tag", "work"]) == 0
+
+    lines = capsys.readouterr().out.strip().splitlines()
+    assert [json.loads(line)["content"] for line in lines] == ["work note"]
+
+
+def test_export_with_embeddings_includes_the_vector(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    _add_memory(db, "a note")
+
+    assert main(["--db", str(db), "export", "--with-embeddings"]) == 0
+
+    record = json.loads(capsys.readouterr().out.strip())
+    assert record["embedding_model"] == "stub-bow"
+    assert record["dim"] == len(record["embedding"])
+
+
+def test_export_import_round_trip_through_files(tmp_path, capsys, _offline):
+    source_db = tmp_path / "source.db"
+    _add_memory(source_db, "sqlite storage", tags=["decision"])
+    _add_memory(source_db, "coffee in the morning")
+
+    assert main(["--db", str(source_db), "export"]) == 0
+    dump = tmp_path / "memories.jsonl"
+    dump.write_text(capsys.readouterr().out, encoding="utf-8")
+
+    fresh_db = tmp_path / "fresh.db"
+    assert main(["--db", str(fresh_db), "import", str(dump)]) == 0
+
+    assert "imported 2 memories" in capsys.readouterr().out
+    with MemoryStore(db_path=fresh_db, embedder=StubEmbedder()) as s:
+        restored = [
+            {k: v for k, v in r.items() if k != "id"} for r in s.export_records()
+        ]
+    with MemoryStore(db_path=source_db, embedder=StubEmbedder()) as s:
+        original = [
+            {k: v for k, v in r.items() if k != "id"} for r in s.export_records()
+        ]
+    assert restored == original
+
+
+def test_import_reads_stdin_by_default(tmp_path, capsys, monkeypatch, _offline):
+    db = tmp_path / "cli.db"
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"content": "piped note"}) + "\n"))
+
+    assert main(["--db", str(db), "import"]) == 0
+
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.recent()[0].content == "piped note"
+
+
+def test_import_skips_malformed_lines_and_exits_nonzero(tmp_path, capsys, _offline):
+    db = tmp_path / "cli.db"
+    dump = tmp_path / "memories.jsonl"
+    dump.write_text(
+        json.dumps({"content": "good"}) + "\n{broken\n" + json.dumps({"content": "also good"}),
+        encoding="utf-8",
+    )
+
+    assert main(["--db", str(db), "import", str(dump)]) == 1
+
+    captured = capsys.readouterr()
+    assert "line 2" in captured.err  # the bad line is named, not fatal
+    assert "imported 2 memories" in captured.out
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.count() == 2
+
+
+def test_import_dry_run_stores_nothing(tmp_path, capsys, _offline):
+    db = tmp_path / "cli.db"
+    dump = tmp_path / "memories.jsonl"
+    dump.write_text(json.dumps({"content": "a note"}), encoding="utf-8")
+
+    assert main(["--db", str(db), "import", str(dump), "--dry-run"]) == 0
+
+    assert "would import 1 memories" in capsys.readouterr().out
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.count() == 0
+
+
+def test_import_twice_does_not_duplicate(tmp_path, capsys, _offline):
+    db = tmp_path / "cli.db"
+    dump = tmp_path / "memories.jsonl"
+    dump.write_text(json.dumps({"content": "a note"}), encoding="utf-8")
+
+    assert main(["--db", str(db), "import", str(dump)]) == 0
+    assert main(["--db", str(db), "import", str(dump)]) == 0
+
+    assert "skipped 1 duplicates" in capsys.readouterr().out
+    with MemoryStore(db_path=db, embedder=StubEmbedder()) as s:
+        assert s.count() == 1
+
+
+def test_import_json_output_is_parseable(tmp_path, capsys, _offline):
+    db = tmp_path / "cli.db"
+    dump = tmp_path / "memories.jsonl"
+    dump.write_text(json.dumps({"content": "a note"}), encoding="utf-8")
+
+    assert main(["--db", str(db), "--json", "import", str(dump)]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["imported"] == 1
+    assert payload["failed"] == 0
+    assert payload["dry_run"] is False
+
+
+def test_import_missing_file_exits_two(tmp_path, capsys, _offline):
+    db = tmp_path / "cli.db"
+
+    assert main(["--db", str(db), "import", str(tmp_path / "nope.jsonl")]) == 2
+
+    assert "cannot read" in capsys.readouterr().err

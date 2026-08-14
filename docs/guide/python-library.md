@@ -133,6 +133,34 @@ memories = [m.to_dict() for m in store.recent(limit=100)]
 print(json.dumps(memories, indent=2))
 ```
 
+## Exporting and importing
+
+`export_records()` yields plain dicts, oldest first, streaming rather than
+loading everything at once. `import_records()` reads them back — from any
+iterable of JSONL strings, so an open file works directly.
+
+```python
+import json
+
+from localmem_mcp import MemoryStore, import_records
+
+with MemoryStore(db_path="./old.db") as source, open("memories.jsonl", "w") as out:
+    for record in source.export_records(tags=["work"]):
+        out.write(json.dumps(record) + "\n")
+
+with MemoryStore(db_path="./new.db") as target, open("memories.jsonl") as handle:
+    report = import_records(target, handle)
+
+print(report.imported, report.skipped_duplicates, report.errors)
+```
+
+Imported memories are re-embedded by the target store — vectors in the file are
+ignored, since one produced by a different model would not be detectably wrong,
+it would just stop matching. `created_at` is preserved, records whose content
+already exists are skipped unless you pass `allow_duplicates=True`, and
+`dry_run=True` reports what would happen without writing. Malformed lines land
+in `report.errors` with their line number instead of raising.
+
 ## Choosing a database and model
 
 ```python

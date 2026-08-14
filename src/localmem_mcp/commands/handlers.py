@@ -8,10 +8,11 @@ process exit code. Handlers are wired to subcommands in
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from typing import TextIO
 
-from ..core import MemoryStore
+from ..core import MemoryStore, import_records
 from .output import _print
 
 
@@ -119,6 +120,64 @@ def handle_forget(store: MemoryStore, args: argparse.Namespace, as_json: bool) -
         lambda: print(f"forgot {count} memories"),
     )
     return 0
+
+
+def handle_export(store: MemoryStore, args: argparse.Namespace, as_json: bool) -> int:
+    """Write memories to stdout as JSONL, one object per line.
+
+    Output is always JSONL — `--json` has nothing to add, since the format is
+    already machine-readable, and a single JSON array would defeat the point of
+    a format you can stream and append to.
+    """
+    for record in store.export_records(
+        tags=args.tags, with_embeddings=args.with_embeddings
+    ):
+        # No indent, no sorting: one compact line per memory is what makes the
+        # file streamable and diff-friendly.
+        print(json.dumps(record, ensure_ascii=False))
+    return 0
+
+
+def handle_import(store: MemoryStore, args: argparse.Namespace, as_json: bool) -> int:
+    """Read JSONL and store each memory, skipping malformed lines."""
+    try:
+        if args.path == "-":
+            report = import_records(
+                store,
+                sys.stdin,
+                dry_run=args.dry_run,
+                allow_duplicates=args.allow_duplicates,
+            )
+        else:
+            with open(args.path, encoding="utf-8") as handle:
+                report = import_records(
+                    store,
+                    handle,
+                    dry_run=args.dry_run,
+                    allow_duplicates=args.allow_duplicates,
+                )
+    except OSError as exc:
+        print(f"cannot read {args.path}: {exc.strerror or exc}", file=sys.stderr)
+        return 2
+
+    # Per-line failures go to stderr in both modes, so a --json stdout stays a
+    # single parseable document and a text run can be piped past the noise.
+    for error in report.errors:
+        print(error, file=sys.stderr)
+
+    def render() -> None:
+        verb = "would import" if report.dry_run else "imported"
+        summary = f"{verb} {report.imported} memories"
+        if report.skipped_duplicates:
+            summary += f", skipped {report.skipped_duplicates} duplicates"
+        if report.failed:
+            summary += f", {report.failed} malformed lines"
+        print(summary)
+
+    _print(report.to_dict(), as_json, render)
+    # Nonzero when something didn't make it in, so a script can tell a clean
+    # import from one that quietly dropped lines.
+    return 1 if report.errors else 0
 
 
 def handle_stats(store: MemoryStore, args: argparse.Namespace, as_json: bool) -> int:

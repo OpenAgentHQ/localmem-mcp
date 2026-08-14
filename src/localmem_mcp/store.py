@@ -13,6 +13,7 @@ from .core import (
     KEYWORD_WEIGHT,
     Embedder,
     FastEmbedEmbedder,
+    ImportReport,
     Memory,
     MemoryStore,
     SearchResult,
@@ -27,6 +28,7 @@ from .core import (
     _row_to_memory,
     _unpack,
     default_db_path,
+    import_records,
 )
 
 __all__ = [
@@ -35,6 +37,7 @@ __all__ = [
     "_SCHEMA",
     "Embedder",
     "FastEmbedEmbedder",
+    "ImportReport",
     "Memory",
     "MemoryStore",
     "SearchResult",
@@ -49,4 +52,5 @@ __all__ = [
     "_row_to_memory",
     "_unpack",
     "default_db_path",
+    "import_records",
 ]

@@ -22,10 +22,12 @@ from .store import (
     DEFAULT_MODEL,
     Embedder,
     FastEmbedEmbedder,
+    ImportReport,
     Memory,
     MemoryStore,
     SearchResult,
     default_db_path,
+    import_records,
 )
 
 try:
@@ -37,9 +39,11 @@ __all__ = [
     "DEFAULT_MODEL",
     "Embedder",
     "FastEmbedEmbedder",
+    "ImportReport",
     "Memory",
     "MemoryStore",
     "SearchResult",
     "__version__",
     "default_db_path",
+    "import_records",
 ]
