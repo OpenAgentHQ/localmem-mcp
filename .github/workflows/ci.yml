@@ -82,7 +82,7 @@ jobs:
           cache: pip
 
       - name: Cache the embedding model
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/fastembed
           key: fastembed-${{ runner.os }}-bge-small-en-v1.5
