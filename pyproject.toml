@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "localmem-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local-first, zero-API memory for AI agents. Persistent, private, and yours."
 readme = "README.md"
 license = { text = "MIT" }

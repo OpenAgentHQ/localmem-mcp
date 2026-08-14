@@ -7,7 +7,7 @@ hide:
 
 <div class="lm-hero" markdown>
 
-<span class="lm-eyebrow"><span class="lm-dot"></span> v0.1.0 · MIT · zero API keys</span>
+<span class="lm-eyebrow"><span class="lm-dot"></span> v0.1.1 · MIT · zero API keys</span>
 
 # Memory for AI agents that never leaves your machine
 
