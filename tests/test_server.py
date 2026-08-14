@@ -26,7 +26,7 @@ async def test_tools_are_exposed(mcp_server):
     async with Client(mcp_server) as client:
         names = {tool.name for tool in await client.list_tools()}
 
-    assert {"store_memory", "search_memory", "recall_memory"} <= names
+    assert {"store_memory", "search_memory", "recall_memory", "update_memory"} <= names
 
 
 async def test_store_search_recall_roundtrip(mcp_server):
@@ -68,6 +68,56 @@ async def test_recall_missing_id_reports_not_found(mcp_server):
 
     assert result.data["found"] is False
     assert result.data["memories"] == []
+
+
+async def test_update_memory_corrects_in_place(mcp_server):
+    async with Client(mcp_server) as client:
+        stored = await client.call_tool(
+            "store_memory", {"content": "We chose postgres as the database"}
+        )
+        memory_id = stored.data["id"]
+        created_at = stored.data["created_at"]
+
+        updated = await client.call_tool(
+            "update_memory",
+            {"memory_id": memory_id, "content": "We chose sqlite as the database"},
+        )
+
+        assert updated.data["found"] is True
+        assert updated.data["memory"]["content"] == "We chose sqlite as the database"
+        assert updated.data["memory"]["created_at"] == created_at
+
+        found = await client.call_tool(
+            "search_memory", {"query": "which database did we pick?"}
+        )
+        assert found.data["results"][0]["id"] == memory_id
+
+
+async def test_update_memory_tag_only_leaves_content(mcp_server):
+    async with Client(mcp_server) as client:
+        stored = await client.call_tool(
+            "store_memory", {"content": "python typing note", "tags": ["old"]}
+        )
+        memory_id = stored.data["id"]
+
+        updated = await client.call_tool(
+            "update_memory", {"memory_id": memory_id, "tags": ["new"]}
+        )
+
+        assert updated.data["found"] is True
+        assert updated.data["memory"]["content"] == "python typing note"
+        assert updated.data["memory"]["tags"] == ["new"]
+
+
+async def test_update_memory_missing_id_reports_not_found(mcp_server):
+    async with Client(mcp_server) as client:
+        result = await client.call_tool(
+            "update_memory", {"memory_id": 9999, "content": "anything"}
+        )
+
+    assert result.data["found"] is False
+    assert result.data["memory_id"] == 9999
+    assert result.data["memory"] is None
 
 
 async def test_search_with_tag_filter(mcp_server):

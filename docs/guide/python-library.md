@@ -79,17 +79,25 @@ Each result is a `SearchResult` wrapping a `Memory` and a `score` — cosine
 similarity plus a bounded keyword bonus, on a 0–1 scale. See
 [How search works](how-search-works.md).
 
-## Reading and deleting
+## Reading, updating, and deleting
 
 ```python
 memory = store.get(7)              # Memory | None
 recent = store.recent(limit=10)    # newest first
 recent = store.recent(limit=10, tags=["ops"])
 
+updated = store.update(7, content="Priya prefers written updates over standups")
+store.update(7, tags=["team", "preference"])  # omit content to skip re-embedding
 store.delete(7)                    # True if it existed
 store.count()                      # int
 store.stats()                      # {"db_path": …, "memories": …, "embedding_model": …}
 ```
+
+`update()` corrects a memory in place. Only the fields you pass are changed —
+omitting `content` leaves the embedding alone, so retagging is instant. Changing
+`content` re-embeds the memory so search finds the correction. `created_at` is
+preserved, `updated_at` is refreshed, and a missing id returns `None` rather
+than raising.
 
 ## Serializing
 

@@ -1,7 +1,7 @@
 # MCP tools
 
-localmem-mcp exposes four tools. Three are the core loop — store, search,
-recall — and one reports on the database itself.
+localmem-mcp exposes five tools. Four are the core loop — store, search,
+recall, update — and one reports on the database itself.
 
 Tool descriptions are written for the model, not for you: each docstring says
 when to reach for the tool *and when not to*. That's why `recall_memory`
@@ -156,6 +156,50 @@ Two modes:
 
 ---
 
+## `update_memory`
+
+Correct an existing memory in place.
+
+```python
+update_memory(
+    memory_id: int,
+    content: str | None = None,
+    tags: list[str] | None = None,
+    source: str | None = None,
+) -> dict
+```
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `memory_id` | `int` | *required* | The id of the memory to correct. |
+| `content` | `str` | `None` | The corrected text. When provided, the memory is re-embedded so search finds the correction. |
+| `tags` | `list[str]` | `None` | Replacement tags. Omit to keep the current ones. |
+| `source` | `str` | `None` | Replacement source. Omit to keep the current one. |
+
+Only the arguments you pass are changed — a tag- or source-only call never
+re-embeds, so it's instant. `created_at` is preserved; `updated_at` is
+refreshed.
+
+**Returns** the corrected memory, or `found: false` if the id doesn't exist:
+
+```json
+{ "found": true, "memory_id": 1, "memory": { "id": 1, "content": "…", "…": "…" } }
+```
+
+```json
+{ "found": false, "memory_id": 9999, "memory": null }
+```
+
+!!! warning "This corrects, it doesn't add"
+
+    Use `update_memory` when a stored memory is *wrong* — a misremembered fact,
+    a misspelled name, a decision that has since changed. Editing the original
+    record keeps one authoritative version instead of leaving the wrong one in
+    search results. For something genuinely new, use
+    [`store_memory`](#store_memory).
+
+---
+
 ## `memory_stats`
 
 Report where memories are stored, how many there are, and which model is in use.
@@ -190,6 +234,8 @@ flowchart LR
     F -->|Yes| G[Answer with context]
     F -->|Need the full record| H[recall_memory by id]
     H --> C
+    F -->|Wrong or stale| I[update_memory]
+    I --> C
 ```
 
 ## Writing memories that stay useful

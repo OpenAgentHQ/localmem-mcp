@@ -69,8 +69,13 @@ Start each new piece of work — a feature, a fix, a docs change, a one-line typ
 
 ```bash
 git checkout main && git pull
-git checkout -b claude/<short-description>
+git checkout -b fix/<issue-number>            # bug fix — name it after the issue
+git checkout -b feature/<short-description>   # new feature — short description
 ```
+
+A bug fix branch is named after the issue it resolves (`fix/17` for issue
+#17); a new feature branch is named after what it adds
+(`feature/update-memory`).
 
 When the work is done, push that branch and open a **new** PR **targeting
 `main`**. Every PR targets `main` — never another feature branch.

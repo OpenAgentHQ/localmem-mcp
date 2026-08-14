@@ -259,6 +259,58 @@ class MemoryStore:
             updated_at=timestamp,
         )
 
+    def update(
+        self,
+        memory_id: int,
+        content: str | None = None,
+        tags: Iterable[str] | str | None = None,
+        source: str | None = None,
+    ) -> Memory | None:
+        """Correct an existing memory in place. Returns None if there's no such memory.
+
+        Only the fields you pass are changed. Changing ``content`` re-embeds the
+        memory so search finds the correction; a tag- or source-only update
+        leaves the vector alone. ``created_at`` is preserved and ``updated_at``
+        refreshed. The FTS5 index stays in sync via the AFTER UPDATE trigger.
+        """
+        sets: list[str] = []
+        params: list[Any] = []
+
+        if content is not None:
+            content = content.strip()
+            if not content:
+                raise ValueError("content must not be empty")
+            vector = self.embedder.embed([content])[0]
+            sets += ["content = ?", "embedding = ?", "embedding_model = ?", "dim = ?"]
+            params += [content, _pack(vector), self.embedder.name, len(vector)]
+
+        if tags is not None:
+            tag_list = _normalize_tags(tags)
+            sets.append("tags = ?")
+            params.append(",".join(tag_list))
+
+        if source is not None:
+            sets.append("source = ?")
+            params.append(source)
+
+        if not sets:
+            raise ValueError("nothing to update: pass content, tags, or source")
+
+        sets.append("updated_at = ?")
+        params.append(_now())
+        params.append(memory_id)
+
+        with self._lock, self._conn:
+            cursor = self._conn.execute(
+                f"UPDATE memories SET {', '.join(sets)} WHERE id = ?", params
+            )
+            if cursor.rowcount == 0:
+                return None
+            row = self._conn.execute(
+                "SELECT * FROM memories WHERE id = ?", (memory_id,)
+            ).fetchone()
+        return _row_to_memory(row)
+
     def delete(self, memory_id: int) -> bool:
         """Delete a memory. Returns True if it existed, False if it didn't."""
         with self._lock, self._conn:

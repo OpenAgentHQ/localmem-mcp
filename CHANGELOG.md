@@ -9,7 +9,20 @@ releases are cut.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+**MCP server**
+
+- `update_memory` — correct an existing memory in place. Changing `content`
+  re-embeds the memory so search finds the correction; a tag- or source-only
+  update leaves the vector alone. `created_at` is preserved, `updated_at`
+  refreshed, and a missing id returns `found: false` rather than raising.
+
+**Python library**
+
+- `MemoryStore.update()` — edit `content`, `tags`, or `source` on an existing
+  memory, re-embedding only when the content changes. Returns the corrected
+  `Memory`, or `None` for a missing id.
 
 ## [0.1.0] — 2026-08-14
 
