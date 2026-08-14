@@ -2,13 +2,33 @@
 title: localmem-mcp
 hide:
   - navigation
+  - toc
 ---
 
-# Give your AI agent a memory that never leaves your machine
+<div class="lm-hero" markdown>
 
-**localmem-mcp** is persistent memory for AI agents — no cloud, no API keys, no
-per-call billing. Just SQLite and local embeddings, running entirely on your
-laptop.
+<span class="lm-eyebrow"><span class="lm-dot"></span> v0.1.0 · MIT · zero API keys</span>
+
+# Memory for AI agents that never leaves your machine
+
+<p class="lm-lede"><strong>localmem-mcp</strong> gives your agent persistent memory backed by SQLite and on-device embeddings. No cloud, no keys, no per-call billing — and after one model download, no network at all.</p>
+
+<div class="lm-actions" markdown>
+[Get started](getting-started/quickstart.md){ .md-button .md-button--primary }
+[How search works](guide/how-search-works.md){ .md-button }
+[GitHub](https://github.com/OpenAgentHQ/localmem-mcp){ .md-button }
+</div>
+
+<div class="lm-term">
+<div class="lm-term__bar"><span></span><span></span><span></span><em>~/your-project</em></div>
+
+```bash
+$ uvx localmem-mcp
+```
+
+</div>
+
+</div>
 
 <div class="grid cards" markdown>
 
@@ -53,13 +73,9 @@ server, metered per call, behind an API key you have to manage.
 
 ## The fix
 
-```bash
-uvx localmem-mcp
-```
-
-Three tools your agent can call: store a memory, search memories by meaning,
-recall a specific one. Everything on disk, in a file you can read, back up, or
-delete.
+One line in your client config, and your agent gets three tools: store a memory,
+search memories by meaning, recall a specific one. Everything lands on disk, in a
+file you can read, back up, or delete.
 
 === "Store"
 

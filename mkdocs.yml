@@ -12,28 +12,31 @@ theme:
     repo: fontawesome/brands/github
     logo: material/brain
   favicon: assets/favicon.png
+  # System fonts only. Material's default pulls Google Fonts at runtime, and a
+  # site whose whole subject is "nothing leaves your machine" should not make
+  # third-party requests to render its own text.
+  font: false
   palette:
     - media: "(prefers-color-scheme)"
       toggle:
-        icon: material/brightness-auto
-        name: Switch to light mode
+        icon: material/circle-half-full
+        name: Match system
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: deep purple
-      accent: deep purple
       toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
+        icon: material/weather-sunny
+        name: Light
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: deep purple
-      accent: deep purple
       toggle:
-        icon: material/brightness-4
-        name: Switch to system preference
+        icon: material/weather-night
+        name: Dark
   features:
     - navigation.instant
+    - navigation.instant.progress
     - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.top
     - navigation.footer
@@ -44,6 +47,7 @@ theme:
     - content.code.annotate
     - content.action.edit
     - content.tabs.link
+    - content.tooltips
 
 nav:
   - Home: index.md
