@@ -9,6 +9,8 @@ releases are cut.
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-08-14
+
 ### Added
 
 **MCP server**
@@ -119,5 +121,6 @@ First release.
 - No network calls at runtime beyond fastembed's one-time model download, and no
   API keys anywhere in the project.
 
-[Unreleased]: https://github.com/OpenAgentHQ/localmem-mcp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/OpenAgentHQ/localmem-mcp/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/OpenAgentHQ/localmem-mcp/releases/tag/v0.1.1
 [0.1.0]: https://github.com/OpenAgentHQ/localmem-mcp/releases/tag/v0.1.0

@@ -9,16 +9,16 @@ a runtime network call, an API key, or a hosted dependency. Features that would
 need one are out of scope no matter how useful. See
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Where we are — 0.1.0
+## Where we are — 0.1.1
 
-Storing, searching, and recalling memories works end to end. Memories live in
-one SQLite file, embeddings are computed on-device, and search is hybrid
-(cosine + FTS5 keyword). It ships as an MCP server, a Python library, and a CLI.
+Storing, searching, recalling, editing, and deleting memories works end to end.
+Memories live in one SQLite file, embeddings are computed on-device, and search
+is hybrid (cosine + FTS5 keyword). It ships as an MCP server, a Python library,
+and a CLI.
 
 What's missing is everything that turns a working tool into one an organisation
-can commit to: you can't edit or delete a memory, you can't get your data back
-out, there's no evidence it holds up past a few thousand rows, and nothing
-proves the privacy claim automatically.
+can commit to: you can't get your data back out, there's no evidence it holds up
+past a few thousand rows, and nothing proves the privacy claim automatically.
 
 That's the shape of the roadmap.
 
@@ -29,14 +29,9 @@ That's the shape of the roadmap.
 *Lifecycle and portability. The gap most likely to make someone abandon the
 tool.*
 
-Right now a memory can be created and read, and that's it. If an agent stores
-something wrong, it's wrong forever. If you want your data elsewhere, there's no
-supported path. This milestone closes both.
+Memories can now be created, read, corrected, and pruned. What's left is
+portability: if you want your data elsewhere, there's no supported path.
 
-- **`update_memory`** — correct a memory in place and re-embed it. The schema
-  already carries `updated_at`.
-- **Forget tools** — delete by id, by tag, or by age, from both MCP and CLI. A
-  memory tool you can't prune becomes landfill.
 - **`list_memories`** — enumerate and filter without a search query, with
   pagination.
 - **JSONL export and import** — the portability guarantee. Your memories should
