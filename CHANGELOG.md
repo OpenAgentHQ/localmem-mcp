@@ -9,6 +9,15 @@ releases are cut.
 
 ## [Unreleased]
 
+### Added
+
+- `offset` on `MemoryStore.search()` and the `search_memory` MCP tool, applied
+  after ranking, so `limit=5, offset=5` returns results 6–10 without re-running
+  a search and discarding the first page. Ranking is deterministic, so pages
+  neither overlap nor skip. Negative offsets are clamped to `0`; an offset past
+  the end returns no results rather than an error. `search_memory` now also
+  echoes the `offset` it used.
+
 ## [0.1.1] — 2026-08-14
 
 ### Added

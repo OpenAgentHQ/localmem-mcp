@@ -95,6 +95,69 @@ def test_search_respects_limit_and_min_score(store):
     assert store.search("database", min_score=1.5) == []
 
 
+def test_search_offset_pages_without_overlap_or_gaps(store):
+    for text in [
+        "sqlite storage database",
+        "postgres database storage",
+        "database typing python",
+        "rust language typing",
+        "coffee and tea in the morning",
+    ]:
+        store.add(text)
+
+    everything = store.search("database storage", limit=5)
+    assert len(everything) == 5
+
+    first = store.search("database storage", limit=2, offset=0)
+    second = store.search("database storage", limit=2, offset=2)
+    third = store.search("database storage", limit=2, offset=4)
+
+    paged = first + second + third
+    assert [r.memory.id for r in paged] == [r.memory.id for r in everything]
+    assert len({r.memory.id for r in paged}) == 5  # no page repeats a memory
+
+
+def test_search_ranking_is_stable_across_identical_calls(store):
+    # Same content twice means identical scores — the id tiebreak keeps the
+    # order fixed, which is what makes paging safe.
+    for _ in range(4):
+        store.add("sqlite database storage")
+
+    first = [r.memory.id for r in store.search("database", limit=4)]
+    second = [r.memory.id for r in store.search("database", limit=4)]
+
+    assert first == second
+    assert first == sorted(first, reverse=True)
+
+
+def test_search_offset_past_the_end_returns_empty(store):
+    store.add("sqlite storage")
+    store.add("postgres database")
+
+    assert store.search("database", limit=5, offset=2) == []
+    assert store.search("database", limit=5, offset=99) == []
+
+
+def test_search_negative_offset_is_clamped_to_zero(store):
+    for text in ["sqlite storage", "postgres database", "coffee and tea"]:
+        store.add(text)
+
+    unpaged = store.search("database", limit=2)
+
+    assert [r.memory.id for r in store.search("database", limit=2, offset=-5)] == [
+        r.memory.id for r in unpaged
+    ]
+
+
+def test_search_offset_applies_after_min_score_filtering(store):
+    store.add("sqlite storage database")
+    store.add("coffee and tea in the morning")
+
+    # The coffee memory scores near zero for this query, so it is filtered out
+    # before paging — offset=1 must fall past the end, not land on it.
+    assert store.search("database storage", limit=5, min_score=0.5, offset=1) == []
+
+
 def test_search_filters_by_tags(store):
     store.add("sqlite is the database", tags=["work"])
     store.add("sqlite is the database", tags=["personal"])
