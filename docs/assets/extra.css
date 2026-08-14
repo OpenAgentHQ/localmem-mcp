@@ -1,39 +1,618 @@
-/* Slightly warmer, calmer purple than Material's stock deep-purple. */
+/* ==========================================================================
+   localmem-mcp documentation theme
+
+   A quiet, typography-led surface over Material for MkDocs. Warm paper in
+   light mode, near-black ink in dark, one clay accent, and borders instead of
+   shadows. System fonts only — the site loads no third-party assets, which
+   matches what the project claims about itself.
+   ========================================================================== */
+
+/* --- Tokens --------------------------------------------------------------- */
+
 :root {
-  --md-primary-fg-color: #5b4bc4;
-  --md-primary-fg-color--light: #7a6bd8;
-  --md-primary-fg-color--dark: #3f3390;
-  --md-accent-fg-color: #6f5ce0;
+  --lm-bg: #faf9f5;
+  --lm-surface: #ffffff;
+  --lm-surface-sunken: #f4f2ec;
+  --lm-fg: #1b1b19;
+  --lm-fg-muted: #6e6b63;
+  --lm-fg-faint: #97938a;
+  --lm-border: #e6e2d8;
+  --lm-border-strong: #d5d0c3;
+  --lm-accent: #b8552f;
+  --lm-accent-hover: #974323;
+  --lm-accent-contrast: #ffffff;
+
+  --lm-font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --lm-mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono",
+    "Cascadia Code", Menlo, Consolas, monospace;
+
+  --lm-radius: 10px;
+  --lm-radius-sm: 6px;
 }
 
-[data-md-color-scheme="slate"] {
-  --md-primary-fg-color: #8b7ce8;
-  --md-accent-fg-color: #a294f0;
-  --md-typeset-a-color: #a294f0;
+/* Material sets some of these under a two-attribute selector
+   ([data-md-color-scheme=slate][data-md-color-primary=indigo]), so a single
+   scheme selector loses on specificity. Matching the attribute pair — which is
+   always present, defaulting to indigo — puts these back in charge. */
+[data-md-color-scheme="default"],
+[data-md-color-scheme="default"][data-md-color-primary][data-md-color-accent] {
+  --md-default-bg-color: var(--lm-bg);
+  --md-default-fg-color: var(--lm-fg);
+  --md-default-fg-color--light: var(--lm-fg-muted);
+  --md-default-fg-color--lighter: var(--lm-fg-faint);
+  --md-default-fg-color--lightest: var(--lm-border);
+  --md-typeset-color: var(--lm-fg);
+  --md-typeset-a-color: var(--lm-accent);
+  --md-primary-fg-color: var(--lm-bg);
+  --md-primary-bg-color: var(--lm-fg);
+  --md-accent-fg-color: var(--lm-accent);
+  --md-code-bg-color: var(--lm-surface-sunken);
+  --md-code-fg-color: var(--lm-fg);
+  --md-footer-bg-color: var(--lm-bg);
+  --md-footer-fg-color: var(--lm-fg-muted);
 }
 
-/* The landing page's card grid. */
-.md-typeset .grid.cards > ul > li {
-  border-radius: 0.6rem;
-  transition: border-color 200ms, box-shadow 200ms;
+[data-md-color-scheme="slate"],
+[data-md-color-scheme="slate"][data-md-color-primary][data-md-color-accent] {
+  --lm-bg: #0f0f0e;
+  --lm-surface: #171716;
+  --lm-surface-sunken: #1b1b19;
+  --lm-fg: #edebe4;
+  --lm-fg-muted: #9b978d;
+  --lm-fg-faint: #6f6c64;
+  --lm-border: #2b2b27;
+  --lm-border-strong: #3a3a35;
+  --lm-accent: #e08a63;
+  --lm-accent-contrast: #17150f;
+
+  --md-default-bg-color: var(--lm-bg);
+  --md-default-fg-color: var(--lm-fg);
+  --md-default-fg-color--light: var(--lm-fg-muted);
+  --md-default-fg-color--lighter: var(--lm-fg-faint);
+  --md-default-fg-color--lightest: var(--lm-border);
+  --md-typeset-color: var(--lm-fg);
+  --md-typeset-a-color: var(--lm-accent);
+  --md-primary-fg-color: var(--lm-bg);
+  --md-primary-bg-color: var(--lm-fg);
+  --md-accent-fg-color: var(--lm-accent);
+  --md-code-bg-color: var(--lm-surface-sunken);
+  --md-code-fg-color: var(--lm-fg);
+  --md-footer-bg-color: var(--lm-bg);
+  --md-footer-fg-color: var(--lm-fg-muted);
 }
 
-.md-typeset .grid.cards > ul > li:hover {
-  border-color: var(--md-accent-fg-color);
-  box-shadow: 0 0 0.6rem rgba(91, 75, 196, 0.12);
+/* --- Base ----------------------------------------------------------------- */
+
+body,
+input,
+button {
+  font-family: var(--lm-font);
+  font-feature-settings: "kern", "liga", "cv11";
 }
 
-/* Tables read better centred and full-width in the reference pages. */
+code,
+kbd,
+pre {
+  font-family: var(--lm-mono);
+}
+
+.md-typeset {
+  font-size: 0.78rem;
+  line-height: 1.72;
+}
+
+.md-typeset h1 {
+  font-size: 2.05rem;
+  line-height: 1.15;
+  letter-spacing: -0.028em;
+  font-weight: 600;
+  color: var(--lm-fg);
+  margin-bottom: 1.1rem;
+}
+
+.md-typeset h2 {
+  font-size: 1.35rem;
+  line-height: 1.25;
+  letter-spacing: -0.021em;
+  font-weight: 600;
+  margin-top: 2.6rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--lm-border);
+}
+
+/* A literal `---` already draws a divider; don't stack the h2 rule on top. */
+.md-typeset hr {
+  border-bottom: 1px solid var(--lm-border);
+  margin: 2.2rem 0;
+}
+
+.md-typeset hr + h2 {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.md-typeset h3 {
+  font-size: 1.02rem;
+  letter-spacing: -0.014em;
+  font-weight: 600;
+  margin-top: 1.8rem;
+}
+
+/* Inline code in a heading is part of the heading, not a chip inside it. */
+.md-typeset :is(h1, h2, h3, h4) code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.94em;
+  color: inherit;
+}
+
+.md-typeset h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.md-typeset a {
+  text-decoration-color: color-mix(in srgb, var(--lm-accent) 35%, transparent);
+  text-underline-offset: 0.18em;
+}
+
+.md-typeset a:hover {
+  text-decoration-color: var(--lm-accent);
+}
+
+/* --- Header --------------------------------------------------------------- */
+
+.md-header {
+  background: color-mix(in srgb, var(--lm-bg) 88%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--lm-border);
+  box-shadow: none;
+  color: var(--lm-fg);
+}
+
+.md-header__title {
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  font-size: 0.82rem;
+}
+
+.md-header__button.md-logo :is(img, svg) {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.md-search__form {
+  background: var(--lm-surface-sunken);
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius-sm);
+  box-shadow: none;
+}
+
+.md-search__form:hover {
+  background: var(--lm-surface-sunken);
+  border-color: var(--lm-border-strong);
+}
+
+[data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+  border-color: var(--lm-accent);
+}
+
+/* Top-level section tabs. */
+.md-tabs {
+  background: transparent;
+  border-bottom: 1px solid var(--lm-border);
+  color: var(--lm-fg-muted);
+}
+
+.md-tabs__link {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 1;
+  color: var(--lm-fg-muted);
+  margin-top: 0.5rem;
+}
+
+.md-tabs__link:is(:hover, :focus) {
+  color: var(--lm-fg);
+}
+
+.md-tabs__item--active .md-tabs__link {
+  color: var(--lm-fg);
+  font-weight: 600;
+}
+
+/* --- Navigation ----------------------------------------------------------- */
+
+.md-nav {
+  font-size: 0.7rem;
+}
+
+.md-nav__title {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 600;
+  color: var(--lm-fg-faint);
+}
+
+.md-nav__link {
+  color: var(--lm-fg-muted);
+  border-radius: var(--lm-radius-sm);
+  transition: color 120ms ease;
+}
+
+.md-nav__link:is(:hover, :focus) {
+  color: var(--lm-fg);
+}
+
+.md-nav__item .md-nav__link--active {
+  color: var(--lm-accent);
+  font-weight: 600;
+}
+
+.md-sidebar--secondary .md-nav__link--active {
+  border-left: 2px solid var(--lm-accent);
+  margin-left: -2px;
+  padding-left: 0.6rem;
+}
+
+/* --- Code ----------------------------------------------------------------- */
+
+.md-typeset code {
+  font-size: 0.86em;
+  padding: 0.12em 0.36em;
+  border-radius: 4px;
+  background: var(--lm-surface-sunken);
+  border: 1px solid var(--lm-border);
+}
+
+.md-typeset pre > code {
+  border: none;
+  padding: 0.9rem 1rem;
+}
+
+.md-typeset .highlight,
+.md-typeset pre {
+  border-radius: var(--lm-radius);
+}
+
+.md-typeset .highlight {
+  border: 1px solid var(--lm-border);
+  background: var(--lm-surface-sunken);
+}
+
+.md-typeset .highlighttable {
+  border-radius: var(--lm-radius);
+  border: 1px solid var(--lm-border);
+}
+
+.md-typeset .highlighttable .highlight {
+  border: none;
+}
+
+/* Filename captions on fenced blocks read as a terminal title bar. */
+.md-typeset .highlight span.filename {
+  background: var(--lm-surface);
+  border-bottom: 1px solid var(--lm-border);
+  font-family: var(--lm-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--lm-fg-muted);
+  letter-spacing: 0.01em;
+  border-radius: var(--lm-radius) var(--lm-radius) 0 0;
+}
+
+/* --- Tables --------------------------------------------------------------- */
+
 .md-typeset table:not([class]) {
   font-size: 0.72rem;
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius);
+  box-shadow: none;
+  overflow: hidden;
 }
 
-/* Keep mermaid diagrams from crowding the text around them. */
-.md-typeset .mermaid {
-  margin: 1.4em 0;
+.md-typeset table:not([class]) th {
+  background: var(--lm-surface-sunken);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.01em;
+  color: var(--lm-fg);
+  border-bottom: 1px solid var(--lm-border);
 }
 
-/* Tighten the generated API signatures a little. */
+.md-typeset table:not([class]) td {
+  border-top: 1px solid var(--lm-border);
+  vertical-align: top;
+}
+
+/* Keep type signatures like list[str] from breaking mid-token. Wide tables
+   already scroll horizontally. */
+.md-typeset table:not([class]) td:nth-child(-n + 3) code {
+  white-space: nowrap;
+}
+
+/* --- Admonitions ---------------------------------------------------------- */
+
+.md-typeset :is(.admonition, details) {
+  border: 1px solid var(--lm-border);
+  border-left: 2px solid var(--lm-border-strong);
+  border-radius: var(--lm-radius);
+  box-shadow: none;
+  background: var(--lm-surface);
+  font-size: 0.74rem;
+}
+
+.md-typeset :is(.admonition-title, summary) {
+  background: transparent;
+  font-weight: 600;
+}
+
+.md-typeset :is(.admonition-title, summary)::before {
+  background-color: var(--lm-fg-muted);
+}
+
+.md-typeset .admonition:is(.tip, .success) {
+  border-left-color: #3f8f6b;
+}
+.md-typeset .admonition:is(.warning, .danger, .failure) {
+  border-left-color: var(--lm-accent);
+}
+.md-typeset .admonition.note {
+  border-left-color: #4a7fb5;
+}
+
+/* --- Buttons -------------------------------------------------------------- */
+
+.md-typeset .md-button {
+  border-radius: var(--lm-radius-sm);
+  border: 1px solid var(--lm-border-strong);
+  color: var(--lm-fg);
+  font-size: 0.74rem;
+  font-weight: 550;
+  padding: 0.5em 1.15em;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.md-typeset .md-button:is(:hover, :focus) {
+  background: var(--lm-surface-sunken);
+  border-color: var(--lm-fg-faint);
+  color: var(--lm-fg);
+}
+
+.md-typeset .md-button--primary {
+  background: var(--lm-fg);
+  border-color: var(--lm-fg);
+  color: var(--lm-bg);
+}
+
+.md-typeset .md-button--primary:is(:hover, :focus) {
+  background: var(--lm-accent);
+  border-color: var(--lm-accent);
+  color: var(--lm-accent-contrast);
+}
+
+/* --- Landing page --------------------------------------------------------- */
+
+.lm-hero {
+  padding: 0 0 1.6rem;
+  border-bottom: 1px solid var(--lm-border);
+  margin-bottom: 2.4rem;
+}
+
+/* The landing page is a cover, not an editable doc page — and Material's
+   default top padding leaves a hole above the hero. */
+.md-main__inner:has(.lm-hero) {
+  margin-top: 1.2rem;
+}
+
+.md-content:has(.lm-hero) .md-content__button {
+  display: none;
+}
+
+.md-typeset .lm-hero h1 {
+  font-size: 2.6rem;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  max-width: 17em;
+  margin: 0.5rem 0 0.9rem;
+}
+
+.lm-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  font-family: var(--lm-mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.03em;
+  color: var(--lm-fg-muted);
+  border: 1px solid var(--lm-border);
+  border-radius: 999px;
+  padding: 0.3em 0.85em;
+  background: var(--lm-surface);
+}
+
+.lm-eyebrow .lm-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3f8f6b;
+}
+
+.md-typeset .lm-lede {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--lm-fg-muted);
+  max-width: 34em;
+  margin-bottom: 1.6rem;
+}
+
+.md-typeset .lm-lede strong {
+  color: var(--lm-fg);
+  font-weight: 600;
+}
+
+.lm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.md-typeset .lm-actions .md-button {
+  margin: 0;
+}
+
+/* Terminal card. */
+.lm-term {
+  margin: 2rem 0 0;
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius);
+  background: var(--lm-surface-sunken);
+  overflow: hidden;
+  max-width: 44em;
+}
+
+.lm-term__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.55em 0.85em;
+  border-bottom: 1px solid var(--lm-border);
+  background: var(--lm-surface);
+}
+
+.lm-term__bar span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--lm-border-strong);
+}
+
+.lm-term__bar em {
+  margin-left: 0.5em;
+  font-style: normal;
+  font-family: var(--lm-mono);
+  font-size: 0.63rem;
+  color: var(--lm-fg-faint);
+}
+
+.md-typeset .lm-term pre {
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+.md-typeset .lm-term .highlight {
+  border: none;
+  background: transparent;
+  margin: 0;
+}
+
+/* Feature grid — flat, bordered, no shadow. */
+.md-typeset .grid.cards > :is(ul, ol) > li,
+.md-typeset .grid > .card {
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius);
+  box-shadow: none;
+  background: var(--lm-surface);
+  padding: 1.1rem 1.2rem;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li:hover {
+  border-color: var(--lm-border-strong);
+  transform: translateY(-1px);
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li > p:first-child {
+  font-weight: 600;
+  color: var(--lm-fg);
+  letter-spacing: -0.01em;
+}
+
+.md-typeset .grid.cards .twemoji {
+  color: var(--lm-accent);
+}
+
+/* --- API reference -------------------------------------------------------- */
+
 .md-typeset .doc-signature {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
+}
+
+.md-typeset .doc-symbol {
+  border-radius: 4px;
+  font-family: var(--lm-mono);
+  font-size: 0.62rem;
+}
+
+.md-typeset .doc-heading {
+  letter-spacing: -0.012em;
+}
+
+/* --- Diagrams ------------------------------------------------------------- */
+
+.md-typeset .mermaid {
+  margin: 1.6rem 0;
+  padding: 1rem;
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius);
+  background: var(--lm-surface);
+}
+
+/* --- Footer --------------------------------------------------------------- */
+
+.md-footer {
+  border-top: 1px solid var(--lm-border);
+}
+
+.md-footer-meta {
+  background: transparent;
+}
+
+.md-copyright {
+  color: var(--lm-fg-faint);
+  font-size: 0.62rem;
+}
+
+.md-footer__link {
+  opacity: 0.75;
+}
+
+.md-footer__link:hover {
+  opacity: 1;
+}
+
+.md-footer__title {
+  font-weight: 550;
+}
+
+/* --- Responsive ----------------------------------------------------------- */
+
+@media screen and (max-width: 76.1875em) {
+  .md-nav--primary .md-nav__title {
+    background: var(--lm-surface);
+    color: var(--lm-fg);
+    border-bottom: 1px solid var(--lm-border);
+  }
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .lm-hero h1 {
+    font-size: 1.9rem;
+  }
+
+  .md-typeset .lm-lede {
+    font-size: 0.86rem;
+  }
+
+  .lm-actions .md-button {
+    width: 100%;
+    text-align: center;
+  }
 }
