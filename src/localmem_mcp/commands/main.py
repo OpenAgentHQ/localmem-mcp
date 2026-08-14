@@ -8,6 +8,7 @@ store from a terminal.
 from __future__ import annotations
 
 import argparse
+import os
 
 from ..core import DEFAULT_MODEL, MemoryStore
 from .handlers import (
@@ -26,7 +27,7 @@ def _shared(args: argparse.Namespace) -> tuple[str | None, str, bool]:
     """Read the shared flags, supplying the defaults SUPPRESS leaves out."""
     return (
         getattr(args, "db", None),
-        getattr(args, "model", DEFAULT_MODEL),
+        getattr(args, "model", os.environ.get("LOCALMEM_MODEL", DEFAULT_MODEL)),
         getattr(args, "json", False),
     )
 
