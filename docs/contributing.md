@@ -60,6 +60,7 @@ src/localmem_mcp/
 tests/
   test_store.py   store behaviour, against a stub embedder
   test_server.py  MCP tools end-to-end via fastmcp's in-memory Client
+benchmarks/   run.py — latency harness; RESULTS.md — committed numbers
 docs/         this site
 ```
 
@@ -108,6 +109,23 @@ For MCP-level tests, drive the tools through `fastmcp.Client(server)` as
 `tests/test_server.py` does — that's the path a real client takes, so it catches
 problems that calling the functions directly would miss.
 
+## Benchmarks
+
+Performance claims here should come with numbers. `benchmarks/run.py` measures
+`add()` and `search()` at any corpus size, splitting each timing into embedding,
+SQLite, and scoring:
+
+```bash
+.venv/bin/python benchmarks/run.py --sizes 1000,10000,100000
+```
+
+It runs against a stub embedder by default, so the numbers isolate localmem's
+own code; `--real` uses the shipped model. If you change anything on the search
+path, re-run it and update `benchmarks/RESULTS.md` in the same PR.
+
+Current results and what they imply are on the
+[Benchmarks](reference/benchmarks.md) page.
+
 ## Style
 
 - Type hints throughout, with `from __future__ import annotations` at the top.
@@ -120,7 +138,8 @@ problems that calling the functions directly would miss.
 - `forget`/prune tooling: delete by tag, by age, or by id
 - Export/import to JSONL, so a memory store is portable
 - An `update_memory` tool — the schema already carries `updated_at`
-- Benchmarks: how does search hold up at 10k / 100k memories?
+- Faster scoring: the [benchmarks](reference/benchmarks.md) show the Python
+  cosine loop is over 90% of a search
 - Docs fixes and typos — genuinely useful, always welcome
 
 Issues labelled [`good first issue`](https://github.com/OpenAgentHQ/localmem-mcp/labels/good%20first%20issue)

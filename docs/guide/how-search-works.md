@@ -82,13 +82,20 @@ Every search scores every row. That's deliberate:
 
 - **It's exact.** Approximate nearest-neighbour indexes trade recall for speed.
   At personal-memory scale that trade buys nothing.
-- **It's fast enough.** Thousands to low tens of thousands of memories is
-  imperceptible.
 - **It keeps the design honest.** No index to rebuild, no staleness, no tuning.
+
+The cost is that search time grows with the store. Measured, that's about 65 ms
+at 1,000 memories, crossing 100 ms around 1,500 and reaching two thirds of a
+second at 10,000 — see [Benchmarks](../reference/benchmarks.md) for the full
+picture and for how to re-run the numbers yourself. Comfortable for a typical
+personal store; noticeable for a large one, where per-project databases are the
+practical answer.
 
 If it ever needs to change, an ANN index belongs *behind* the same
 [`MemoryStore.search()`](../reference/api.md) signature — the API shouldn't
-change to accommodate the storage strategy.
+change to accommodate the storage strategy. The benchmarks say that isn't the
+first thing to reach for, though: over 90% of a search is the Python scoring
+loop, not the number of rows visited.
 
 ## Tuning results
 
