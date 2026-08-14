@@ -11,9 +11,9 @@ releases are cut.
 
 Nothing yet.
 
-## [0.1.0] — unreleased
+## [0.1.0] — 2026-08-14
 
-First release. Not yet published to PyPI.
+First release.
 
 ### Added
 
