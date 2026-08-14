@@ -12,13 +12,16 @@ from fastmcp.exceptions import ToolError
 from test_store import StubEmbedder
 
 from localmem_mcp import server
+from localmem_mcp.mcp import app as mcp_app
 from localmem_mcp.store import MemoryStore, _days_ago
 
 
 @pytest.fixture
 def mcp_server(tmp_path, monkeypatch):
     store = MemoryStore(db_path=tmp_path / "mcp.db", embedder=StubEmbedder())
-    monkeypatch.setattr(server, "_store", store)
+    # Patch the store where it actually lives: `server` is a facade that
+    # re-exports `get_store`, which reads `_store` from `mcp.app`'s globals.
+    monkeypatch.setattr(mcp_app, "_store", store)
     yield server.mcp
     store.close()
 

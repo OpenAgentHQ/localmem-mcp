@@ -11,9 +11,9 @@ flowchart TD
     end
 
     subgraph Package["localmem-mcp"]
-        B["server.py<br/>FastMCP tools"]
-        C["cli.py<br/>argparse entry point"]
-        D["store.py<br/>MemoryStore"]
+        B["server.py → mcp/<br/>FastMCP tools"]
+        C["cli.py → commands/<br/>argparse entry point"]
+        D["store.py → core/<br/>MemoryStore"]
     end
 
     subgraph Local["Your machine"]
@@ -29,8 +29,11 @@ flowchart TD
     D --> F
 ```
 
-`store.py` is the project. `server.py` and `cli.py` are thin adapters that
+`core/store.py` is the project. `mcp/` and `commands/` are thin adapters that
 translate MCP calls and command-line arguments into `MemoryStore` method calls.
+The top-level `store.py`, `server.py`, and `cli.py` modules are
+backward-compatible facades that re-export the implementation packages, so the
+documented import paths never change as the internals grow.
 
 ## Storage
 
@@ -199,13 +202,13 @@ CI runs it on every pull request.
 
 ## Reading the source
 
-If you want to understand the project, read `store.py` — everything else is a
-shell over it. Within it, the parts that carry the most weight:
+If you want to understand the project, read `core/store.py` — everything else
+is a shell over it. Within it, the parts that carry the most weight:
 
 | Location | Why it matters |
 | --- | --- |
-| `MemoryStore.search` | The hybrid scoring blend |
-| `_fts_query` | The one place untrusted input meets a query language |
-| `_SCHEMA` triggers | External-content FTS5 needs all three to stay consistent |
-| `_pack` / `_unpack` | The `float32` round-trip through the BLOB column |
-| `FastEmbedEmbedder._ensure_model` | The lazy-load pattern |
+| `core/store.py` — `MemoryStore.search` | The hybrid scoring blend |
+| `core/search.py` — `_fts_query` | The one place untrusted input meets a query language |
+| `core/schema.py` — `_SCHEMA` triggers | External-content FTS5 needs all three to stay consistent |
+| `core/utils.py` — `_pack` / `_unpack` | The `float32` round-trip through the BLOB column |
+| `core/embedders.py` — `FastEmbedEmbedder._ensure_model` | The lazy-load pattern |
