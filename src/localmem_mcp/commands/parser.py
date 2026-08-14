@@ -90,7 +90,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Delete the single memory with this id",
     )
     forget.add_argument(
-        "--tag", action="append", dest="tags", default=[], help="Bulk-delete memories with this tag (repeatable)"
+        "--tag",
+        action="append",
+        dest="tags",
+        default=[],
+        help="Bulk-delete memories with this tag (repeatable)",
     )
     forget.add_argument(
         "--older-than",
