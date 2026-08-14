@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "deps"
+    # Runtime deps are intentionally few; group the dev tooling so it lands in
+    # one PR a month instead of several.
+    groups:
+      dev-tooling:
+        patterns:
+          - "pytest*"
+          - "ruff"

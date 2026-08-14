@@ -1,0 +1,77 @@
+name: Bug report
+description: Something isn't working the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please don't paste the contents of your memory
+        database — it's yours, and we don't want to see it. A redacted example
+        that reproduces the problem is perfect.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence that triggers it.
+      placeholder: |
+        1. localmem-mcp add "..."
+        2. localmem-mcp search "..."
+        3. Returns nothing, expected a match
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `localmem-mcp --version`
+      placeholder: localmem-mcp 0.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: client
+    attributes:
+      label: How are you using it?
+      multiple: true
+      options:
+        - Claude Code
+        - Claude Desktop
+        - Cursor
+        - OpenClaw
+        - Another MCP client
+        - Python library
+        - CLI
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: OS and Python version
+      placeholder: macOS 15.1, Python 3.12.4
+    validations:
+      required: true
+
+  - type: textarea
+    id: stats
+    attributes:
+      label: Output of `localmem-mcp stats`
+      description: Tells us where the database is, how big it is, and which model is loaded.
+      render: shell
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output
+      description: Full traceback or client logs, if any.
+      render: shell

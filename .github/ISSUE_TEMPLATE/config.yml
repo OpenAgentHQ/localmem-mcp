@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or idea
+    url: https://github.com/OpenAgentHQ/localmem-mcp/discussions
+    about: Ask how something works, or float an idea before building it.
+  - name: MCP client setup help
+    url: https://modelcontextprotocol.io/quickstart/user
+    about: General help connecting an MCP server to your client.

@@ -63,6 +63,11 @@ Tests must stay offline by default — use `StubEmbedder` from `test_store.py`.
 The one test that needs real embeddings is skipped unless
 `LOCALMEM_TEST_FASTEMBED=1` is set.
 
+CI (`.github/workflows/ci.yml`) runs on every PR: ruff, the suite on Python
+3.10–3.13 across Linux/macOS/Windows, a job with `LOCALMEM_TEST_FASTEMBED=1` for
+real embeddings, and a packaging check. Run `ruff check .` and `pytest -q`
+locally before pushing — those are the two that fail most often.
+
 Smoke-test the server the way a client sees it:
 
 ```bash

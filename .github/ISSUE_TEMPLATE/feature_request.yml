@@ -1,0 +1,51 @@
+name: Feature request
+description: Suggest something localmem-mcp should do
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        localmem-mcp is small on purpose. The features most likely to land are
+        the ones that make **storing and recalling memories** better — not ones
+        that turn it into an agent framework.
+
+        Two things are out of scope no matter how good the idea: anything that
+        sends data off the user's machine, and anything that needs an API key.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you hitting?
+      description: Describe the situation, not the solution. What were you trying to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What have you tried instead?
+      description: Workarounds you're using today, or other approaches you considered.
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Does it fit the project's constraints?
+      options:
+        - label: This works with no network calls at runtime
+          required: true
+        - label: This needs no API keys or hosted services
+          required: true
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Would you like to build it?
+      options:
+        - label: I'd be willing to open a PR for this

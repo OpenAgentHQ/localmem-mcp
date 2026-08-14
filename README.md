@@ -4,6 +4,7 @@
 
 **Give your AI agent a memory that never leaves your machine.**
 
+[![CI](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
 [![Python](https://img.shields.io/pypi/pyversions/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -131,7 +132,23 @@ Point separate projects at separate databases with `--db` or `LOCALMEM_DB_PATH`.
 
 ## Contributing
 
-Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and PRs are welcome, and the project is deliberately small enough to read
+in one sitting — `store.py` is the whole thing, and everything else is a shell
+over it.
+
+```bash
+git clone https://github.com/OpenAgentHQ/localmem-mcp && cd localmem-mcp
+python -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/python -m pytest -q        # offline, about a second
+```
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the layout, the testing approach, and
+what does and doesn't fit the project.
+[Good first issues](https://github.com/OpenAgentHQ/localmem-mcp/labels/good%20first%20issue)
+are scoped to be approachable without deep context.
+
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security policy](SECURITY.md) — report vulnerabilities privately, please
 
 ## License
 
