@@ -65,6 +65,7 @@ nav:
   - Reference:
       - Python API: reference/api.md
       - Architecture: reference/architecture.md
+      - Benchmarks: reference/benchmarks.md
   - Contributing: contributing.md
 
 plugins:

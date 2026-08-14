@@ -151,7 +151,8 @@ the machine spec, since absolute numbers are only comparable within one machine.
 - `forget`/prune tooling: delete by tag, by age, or by id.
 - Export/import to JSONL, so a memory store is portable and inspectable.
 - An `update_memory` tool — the schema already carries `updated_at`.
-- Benchmarks: how does search hold up at 10k / 100k memories?
+- Faster scoring — `benchmarks/RESULTS.md` shows the Python cosine loop is over
+  90% of a search.
 - Docs fixes and typos — genuinely useful, always welcome.
 
 Issues labelled [`good first issue`](https://github.com/OpenAgentHQ/localmem-mcp/labels/good%20first%20issue)
