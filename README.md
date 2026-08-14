@@ -1,8 +1,6 @@
 <div align="center">
 
-# localmem-mcp
-
-**Give your AI agent a memory that never leaves your machine.**
+<img src="docs/assets/banner.svg" alt="localmem-mcp — give your AI agent a memory that never leaves your machine" width="880">
 
 [![CI](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml)
 [![PyPI - Version](https://img.shields.io/pypi/v/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
@@ -12,7 +10,7 @@
 [![Docs](https://img.shields.io/badge/docs-openagenthq.github.io-5b4bc4)](https://openagenthq.github.io/localmem-mcp/)
 [![Local-first](https://img.shields.io/badge/cloud%20calls-zero-brightgreen)](#privacy)
 
-No cloud. No API keys. No per-call billing. Just SQLite and local embeddings.
+Just SQLite and local embeddings.
 
 **[📖 Read the docs →](https://openagenthq.github.io/localmem-mcp/)**
 

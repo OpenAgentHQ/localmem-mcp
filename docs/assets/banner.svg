@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-label="localmem-mcp terminal session: an agent stores a decision, then recalls it in a new session, with zero network calls">
+  <title>localmem-mcp</title>
+  <desc>A terminal window: connecting localmem as an MCP server, storing a decision, and recalling it from a later session — all on-device.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141310"/>
+      <stop offset="0.55" stop-color="#1a1815"/>
+      <stop offset="1" stop-color="#12110f"/>
+    </linearGradient>
+    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#211e1a"/>
+      <stop offset="1" stop-color="#1a1815"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e08a63" stop-opacity="0.13"/>
+      <stop offset="1" stop-color="#e08a63" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#f5f2ea" opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <!-- backdrop -->
+  <rect x="0" y="0" width="1280" height="420" rx="18" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1280" height="420" rx="18" fill="url(#dots)"/>
+  <ellipse cx="640" cy="210" rx="520" ry="300" fill="url(#glow)"/>
+
+  <!-- terminal window -->
+  <rect x="40" y="28" width="1200" height="364" rx="14" fill="#0f0e0c" stroke="#343029"/>
+  <path d="M40 42 a14 14 0 0 1 14 -14 h1172 a14 14 0 0 1 14 14 v30 h-1200 z" fill="url(#chrome)"/>
+  <line x1="40" y1="72" x2="1240" y2="72" stroke="#2c2822"/>
+  <circle cx="70" cy="50" r="6.5" fill="#d96e5c"/>
+  <circle cx="92" cy="50" r="6.5" fill="#d9a742"/>
+  <circle cx="114" cy="50" r="6.5" fill="#72ad68"/>
+  <text x="640" y="55" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="13.5" fill="#7c786f">localmem-mcp — ~/your-project</text>
+
+  <!-- session -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" xml:space="preserve">
+    <text x="76" y="118" fill="#6f6c64">// give your AI agent a memory that never leaves your machine</text>
+
+    <text x="76" y="158"><tspan fill="#e08a63">$ </tspan><tspan fill="#f5f2ea">claude mcp add localmem -- uvx localmem-mcp</tspan></text>
+    <text x="76" y="190"><tspan fill="#72ad68">✓ </tspan><tspan fill="#8e8a80">connected · store_memory · search_memory · recall_memory</tspan></text>
+
+    <text x="76" y="234"><tspan fill="#e08a63">› </tspan><tspan fill="#cbc5b8">"Remember we chose SQLite over Postgres — it ships as one file."</tspan></text>
+    <text x="76" y="266"><tspan fill="#72ad68">✓ </tspan><tspan fill="#8e8a80">stored #1 · tags: decision, architecture · </tspan><tspan fill="#e5a077">0 network calls</tspan></text>
+
+    <text x="76" y="310"><tspan fill="#e08a63">› </tspan><tspan fill="#cbc5b8">"What database did we pick, and why?"</tspan><tspan fill="#57544d">   // new session, tomorrow</tspan></text>
+    <text x="76" y="342"><tspan fill="#72ad68">✓ </tspan><tspan fill="#8e8a80">recalled #1 · score </tspan><tspan fill="#e5a077">0.87</tspan><tspan fill="#8e8a80"> · "We chose SQLite over Postgres…"</tspan></text>
+
+    <text x="76" y="376"><tspan fill="#e08a63">$ </tspan></text>
+  </g>
+  <rect x="98" y="362" width="10" height="19" fill="#e5a077" opacity="0.85"/>
+</svg>
