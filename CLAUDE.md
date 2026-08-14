@@ -1,0 +1,85 @@
+# CLAUDE.md
+
+Project context for agent sessions working on this repo.
+
+## What this is
+
+`localmem-mcp` gives AI agents persistent memory that never leaves the user's
+machine. It ships as **both** an MCP server and an importable Python library.
+
+The whole pitch is one sentence: *local-first, zero-API memory for AI agents —
+no cloud calls, no API keys, no per-call billing.* Every change should keep that
+sentence true.
+
+## Non-negotiables
+
+1. **No network calls at runtime.** The single exception is fastembed's one-time
+   model download on first use. Do not add telemetry, analytics, update checks,
+   or any hosted service dependency.
+2. **No API keys.** If a feature needs a key, it doesn't belong here.
+3. **Single-purpose.** This is a memory tool. Resist scope creep into agent
+   frameworks, RAG pipelines, or chat UIs.
+4. **Install-to-working under 30 seconds.** Weigh every new dependency against
+   that. `fastembed` was chosen over `sentence-transformers` precisely for
+   install size and cold-start time — don't swap it back.
+
+## Layout
+
+```
+src/localmem_mcp/
+  store.py    MemoryStore — SQLite schema, embeddings, hybrid search. The core.
+  server.py   FastMCP server; thin wrappers over MemoryStore. Tool docstrings
+              are the agent-facing UX — they matter as much as the code.
+  cli.py      argparse entry point; `localmem-mcp` with no args runs the server.
+tests/
+  test_store.py   store behaviour, against a deterministic stub embedder
+  test_server.py  MCP tools end-to-end via fastmcp's in-memory Client
+```
+
+## Design decisions worth knowing
+
+- **Everything in one SQLite table.** Embeddings live as `float32` blobs in the
+  `memories` row. No sidecar vector DB, no sync problem.
+- **Hybrid search.** Cosine similarity over all rows, plus a bounded bonus
+  (`KEYWORD_WEIGHT`) for FTS5 keyword hits, so exact terms survive. Scores stay
+  on the 0–1 cosine scale so `min_score` means something.
+- **Brute-force scan is deliberate.** It's exact and fast enough at personal
+  scale. If it ever needs to change, add an ANN index behind the same
+  `MemoryStore.search` signature rather than reshaping the API.
+- **Lazy model load.** `FastEmbedEmbedder` loads the ONNX model on first embed,
+  not at import, so MCP clients that spawn the server eagerly don't stall.
+- **Embedder is injectable.** `MemoryStore(embedder=...)` accepts anything with
+  `.name` and `.embed(texts)`. That's how the tests stay offline and fast.
+
+## Working on it
+
+```bash
+python -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/python -m pytest -q                       # fast, offline
+LOCALMEM_TEST_FASTEMBED=1 .venv/bin/python -m pytest -q   # includes the real model
+```
+
+Tests must stay offline by default — use `StubEmbedder` from `test_store.py`.
+The one test that needs real embeddings is skipped unless
+`LOCALMEM_TEST_FASTEMBED=1` is set.
+
+Smoke-test the server the way a client sees it:
+
+```bash
+.venv/bin/localmem-mcp --db /tmp/scratch.db stats
+printf '' | .venv/bin/localmem-mcp serve        # should start, then exit cleanly
+```
+
+## Releasing
+
+Bump `version` in `pyproject.toml`, tag `vX.Y.Z`, and push the tag.
+`.github/workflows/release.yml` builds and publishes to PyPI via Trusted
+Publishing (OIDC) — **there are no tokens or secrets**, and the workflow
+filename must stay `release.yml` because the PyPI trusted publisher is
+configured against it.
+
+## Style
+
+- Type hints throughout; `from __future__ import annotations` at the top.
+- Comments explain *why*, not *what*. Match the existing density.
+- MCP tool docstrings are prompts: say when to use the tool and when not to.
