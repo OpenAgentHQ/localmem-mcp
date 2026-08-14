@@ -98,6 +98,47 @@ def recall_memory(memory_id: int | None = None, limit: int = 5) -> dict[str, Any
 
 
 @mcp.tool
+def list_memories(
+    tags: list[str] | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    order: str = "newest",
+) -> dict[str, Any]:
+    """List stored memories without semantic search.
+
+    Use this to browse or audit memories, especially when you need all
+    memories carrying specific tags. Unlike search_memory, this performs
+    database filtering and ordering only — no embeddings or similarity
+    scoring are used.
+
+    Args:
+        tags: Only return memories carrying all of these tags.
+        limit: Maximum number of memories to return.
+        offset: Number of matching memories to skip for pagination.
+        order: Ordering direction: "newest" or "oldest".
+
+    Returns:
+        The matching memories, total number of matches, and pagination details.
+    """
+    memories, total = get_store().list(
+        tags=tags,
+        limit=limit,
+        offset=offset,
+        order=order,
+    )
+
+    return {
+        "count": len(memories),
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+        "order": order,
+        "tags": tags or [],
+        "memories": [memory.to_dict() for memory in memories],
+    }
+
+
+@mcp.tool
 def update_memory(
     memory_id: int,
     content: str | None = None,

@@ -109,6 +109,37 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip the confirmation prompt for bulk deletes",
     )
+    list_memories = sub.add_parser(
+        "list",
+        parents=[common],
+        help="List stored memories without semantic search",
+    )
+    list_memories.add_argument(
+        "--tag",
+        action="append",
+        dest="tags",
+        default=[],
+        help="Filter by tag (repeatable; all tags must match)",
+    )
+    list_memories.add_argument(
+        "-n",
+        "--limit",
+        type=int,
+        default=20,
+        help="Maximum number of memories to return",
+    )
+    list_memories.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="Number of matching memories to skip",
+    )
+    list_memories.add_argument(
+        "--order",
+        choices=["newest", "oldest"],
+        default="newest",
+        help="Ordering direction",
+    )
 
     sub.add_parser("stats", parents=[common], help="Show database location and memory count")
     return parser

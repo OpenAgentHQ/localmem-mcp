@@ -203,6 +203,56 @@ class MemoryStore:
         ).fetchone()
         return _row_to_memory(row) if row else None
 
+    def list(
+        self,
+        tags: Iterable[str] | str | None = None,
+        limit: int = 20,
+        offset: int = 0,
+        order: str = "newest",
+    ) -> tuple[list[Memory], int]:
+        """List stored memories with SQL filtering and pagination.
+
+        Returns the selected memories and the total number of memories matching
+        the tag filters. No embedding or semantic scoring is performed.
+        """
+        if limit <= 0:
+            raise ValueError("limit must be positive")
+        if offset < 0:
+            raise ValueError("offset must be non-negative")
+        if order not in {"newest", "oldest"}:
+            raise ValueError("order must be 'newest' or 'oldest'")
+
+        tag_list = _normalize_tags(tags)
+
+        clauses: list[str] = []
+        params: list[Any] = []
+
+        for tag in tag_list:
+            clauses.append("(',' || tags || ',') LIKE ?")
+            params.append(f"%,{tag},%")
+
+        where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+        order_sql = "DESC" if order == "newest" else "ASC"
+
+        total = int(
+            self._conn.execute(
+                f"SELECT COUNT(*) FROM memories{where}",
+                params,
+            ).fetchone()[0]
+        )
+
+        rows = self._conn.execute(
+            f"""
+            SELECT *
+            FROM memories
+            {where}
+            ORDER BY id {order_sql}
+            LIMIT ? OFFSET ?
+            """,
+            [*params, limit, offset],
+        ).fetchall()
+        return [_row_to_memory(row) for row in rows], total
+
     def recent(
         self, limit: int = 10, tags: Iterable[str] | str | None = None
     ) -> list[Memory]:

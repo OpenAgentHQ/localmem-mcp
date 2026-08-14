@@ -67,6 +67,44 @@ def handle_recall(store: MemoryStore, args: argparse.Namespace, as_json: bool) -
     return 0
 
 
+def handle_list(store: MemoryStore, args: argparse.Namespace, as_json: bool) -> int:
+    """List stored memories without semantic search."""
+    try:
+        memories, total = store.list(
+            tags=args.tags,
+            limit=args.limit,
+            offset=args.offset,
+            order=args.order,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    payload = {
+        "count": len(memories),
+        "total": total,
+        "offset": args.offset,
+        "limit": args.limit,
+        "order": args.order,
+        "tags": args.tags,
+        "memories": [memory.to_dict() for memory in memories],
+    }
+
+    def render() -> None:
+        if not memories:
+            print("no memories")
+            return
+
+        for memory in memories:
+            tags = f" [{', '.join(memory.tags)}]" if memory.tags else ""
+            print(f"#{memory.id} ({memory.created_at}){tags} {memory.content}")
+
+        print(f"\nshowing {len(memories)} of {total} memories")
+
+    _print(payload, as_json, render)
+    return 0
+
+
 def handle_forget(store: MemoryStore, args: argparse.Namespace, as_json: bool) -> int:
     """Delete a memory by id, or bulk-delete by tag and/or age."""
     if args.memory_id is not None:

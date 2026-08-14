@@ -42,6 +42,28 @@ def test_db_flag_survives_either_side_of_the_subcommand(argv):
 
     assert db_path == "/tmp/x.db"
 
+def test_list_command_parses_filters_and_pagination():
+    args = _build_parser().parse_args(
+        [
+            "list",
+            "--tag",
+            "decision",
+            "--tag",
+            "project",
+            "--limit",
+            "10",
+            "--offset",
+            "20",
+            "--order",
+            "oldest",
+        ]
+    )
+
+    assert args.command == "list"
+    assert args.tags == ["decision", "project"]
+    assert args.limit == 10
+    assert args.offset == 20
+    assert args.order == "oldest"
 
 def test_db_flag_without_a_subcommand():
     # How MCP clients invoke it: no subcommand, so `serve` is implied.
@@ -120,6 +142,108 @@ def test_recall_missing_id_exits_nonzero(tmp_path, capsys):
 
     assert "no memory with id 999" in capsys.readouterr().err
 
+def test_list_command_filters_and_paginates(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+
+    first = _add_memory(db, "first decision", tags=["decision", "project"])
+    _add_memory(db, "unrelated note", tags=["personal"])
+    third = _add_memory(db, "second decision", tags=["decision", "project"])
+
+    assert (
+        main(
+            [
+                "--db",
+                str(db),
+                "list",
+                "--tag",
+                "decision",
+                "--tag",
+                "project",
+                "--limit",
+                "1",
+                "--offset",
+                "0",
+                "--order",
+                "newest",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+
+    assert f"#{third.id}" in output
+    assert f"#{first.id}" not in output
+    assert "showing 1 of 2 memories" in output
+
+def test_list_command_supports_oldest_order_and_offset(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+
+    first = _add_memory(db, "first memory")
+    second = _add_memory(db, "second memory")
+    third = _add_memory(db, "third memory")
+
+    assert (
+        main(
+            [
+                "--db",
+                str(db),
+                "list",
+                "--limit",
+                "1",
+                "--offset",
+                "1",
+                "--order",
+                "oldest",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+
+    assert f"#{second.id}" in output
+    assert f"#{first.id}" not in output
+    assert f"#{third.id}" not in output
+
+def test_list_command_json_output_is_parseable(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+
+    _add_memory(db, "decision one", tags=["decision"])
+    _add_memory(db, "decision two", tags=["decision"])
+
+    assert (
+        main(
+            [
+                "--db",
+                str(db),
+                "--json",
+                "list",
+                "--tag",
+                "decision",
+            ]
+        )
+        == 0
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+
+    assert payload["count"] == 2
+    assert payload["total"] == 2
+    assert payload["offset"] == 0
+    assert payload["limit"] == 20
+    assert payload["order"] == "newest"
+    assert payload["tags"] == ["decision"]
+    assert len(payload["memories"]) == 2
+
+def test_list_command_empty_store(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+
+    assert main(["--db", str(db), "list"]) == 0
+
+    output = capsys.readouterr().out
+
+    assert "no memories" in output
 
 # -- forget ----------------------------------------------------------------
 #

@@ -1,8 +1,8 @@
 # MCP tools
 
-localmem-mcp exposes seven tools. Six are the core loop — store, search,
-recall, update, and the two forget tools — and one reports on the database
-itself.
+localmem-mcp exposes eight tools. Seven cover the core memory workflow —
+store, search, recall, list, update, and the two forget tools — and one reports
+on the database itself.
 
 Tool descriptions are written for the model, not for you: each docstring says
 when to reach for the tool *and when not to*. That's why `recall_memory`
@@ -154,6 +154,60 @@ Two modes:
     previous `store_memory` or `search_memory` call — or when you want a
     chronological catch-up. To find memories by meaning, use
     [`search_memory`](#search_memory).
+
+---
+
+## `list_memories`
+
+Browse stored memories using database filtering and ordering, without semantic
+search.
+
+```python
+list_memories(
+    tags: list[str] | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    order: str = "newest",
+)-> dict
+
+```
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `tags` | `list[str]` | `None` | Only return memories carrying **all** of these tags. |
+| `limit` | `int` | `20` | Maximum number of memories to return. |
+| `offset` | `int` | `0` | Number of matching memories to skip. |
+| `order` | `str` | `"newest"` | Ordering direction: `"newest"` or `"oldest"`. |
+
+**Returns** the matching memories, the total number of matches, and pagination
+details:
+
+```json
+{
+  "count": 2,
+  "total": 17,
+  "offset": 0,
+  "limit": 20,
+  "order": "newest",
+  "tags": ["decision"],
+  "memories": [
+    {
+      "id": 17,
+      "content": "We chose SQLite for the local store",
+      "tags": ["decision"],
+      "source": "conversation",
+      "metadata": {},
+      "created_at": "2026-08-14T11:31:00+00:00",
+      "updated_at": "2026-08-14T11:31:00+00:00"
+    }
+  ]
+}
+
+!!! info "This is not a search tool"
+
+`list_memories` performs database filtering, ordering, and pagination only.
+It does **not** embed the query or calculate similarity, so it remains fast
+even when the embedding model has not been loaded.
 
 ---
 

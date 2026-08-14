@@ -92,6 +92,59 @@ Exits with status `1` if the id doesn't exist, so it's safe to use in scripts.
 
 ---
 
+## `list`
+
+Browse memories without semantic search.
+
+```bash
+localmem-mcp list
+localmem-mcp list --tag decision
+localmem-mcp list --tag project --tag decision -n 20
+localmem-mcp list --tag decision --limit 10 --offset 20 --order oldest
+```
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--tag TAG` | — | Only memories with **all** given tags. Repeatable. |
+| `-n`, `--limit` | `20` | Maximum number of memories to return. |
+| `--offset` | `0` | Number of matching memories to skip. |
+| `--order` | `newest` | Ordering direction: `newest` or `oldest`. |
+
+For example:
+
+```text
+#17 (2026-08-14T11:31:00+00:00) [decision, architecture] SQLite is the local store
+#12 (2026-08-13T09:15:00+00:00) [decision] Deployments run on Thursdays
+
+showing 2 of 2 memories
+```
+
+Unlike `search`, `list` does not perform semantic search or load the embedding
+model. It is a database query, so it is suitable for browsing, auditing, and
+paging through memories.
+
+With `--json`, the result includes the matching memories and pagination
+metadata:
+
+```bash
+localmem-mcp list --tag decision --limit 20 --json
+```
+
+```json
+{
+  "count": 2,
+  "total": 17,
+  "offset": 0,
+  "limit": 20,
+  "order": "newest",
+  "tags": ["decision"],
+  "memories": []
+}
+```
+
+---
+
+
 ## `forget`
 
 Delete a memory by id, or bulk-delete by tag and/or age.

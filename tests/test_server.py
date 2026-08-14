@@ -34,6 +34,7 @@ async def test_tools_are_exposed(mcp_server):
         "store_memory",
         "search_memory",
         "recall_memory",
+        "list_memories",
         "update_memory",
         "forget_memory",
         "forget_memories",
@@ -72,6 +73,84 @@ async def test_recall_without_id_returns_recent(mcp_server):
     contents = [m["content"] for m in result.data["memories"]]
     assert contents == ["newer note about rust", "older note about python"]
 
+async def test_list_memories_browses_with_filters_and_pagination(mcp_server):
+    async with Client(mcp_server) as client:
+        first = await client.call_tool(
+            "store_memory",
+            {
+                "content": "first decision",
+                "tags": ["decision", "project"],
+            },
+        )
+        second = await client.call_tool(
+            "store_memory",
+            {
+                "content": "second decision",
+                "tags": ["decision"],
+            },
+        )
+        third = await client.call_tool(
+            "store_memory",
+            {
+                "content": "third decision",
+                "tags": ["decision", "project"],
+            },
+        )
+
+        result = await client.call_tool(
+            "list_memories",
+            {
+                "tags": ["decision", "project"],
+                "limit": 1,
+                "offset": 0,
+                "order": "newest",
+            },
+        )
+
+    assert result.data["count"] == 1
+    assert result.data["total"] == 2
+    assert result.data["offset"] == 0
+    assert result.data["limit"] == 1
+    assert result.data["order"] == "newest"
+    assert result.data["tags"] == ["decision", "project"]
+
+    assert result.data["memories"][0]["id"] == third.data["id"]
+
+async def test_list_memories_supports_oldest_order_and_offset(mcp_server):
+    async with Client(mcp_server) as client:
+        first = await client.call_tool(
+            "store_memory",
+            {"content": "first memory"},
+        )
+        second = await client.call_tool(
+            "store_memory",
+            {"content": "second memory"},
+        )
+        third = await client.call_tool(
+            "store_memory",
+            {"content": "third memory"},
+        )
+
+        result = await client.call_tool(
+            "list_memories",
+            {
+                "limit": 1,
+                "offset": 1,
+                "order": "oldest",
+            },
+        )
+
+    assert result.data["total"] == 3
+    assert result.data["count"] == 1
+    assert result.data["memories"][0]["id"] == second.data["id"]
+
+async def test_list_memories_on_empty_store(mcp_server):
+    async with Client(mcp_server) as client:
+        result = await client.call_tool("list_memories", {})
+
+    assert result.data["count"] == 0
+    assert result.data["total"] == 0
+    assert result.data["memories"] == []
 
 async def test_recall_missing_id_reports_not_found(mcp_server):
     async with Client(mcp_server) as client:

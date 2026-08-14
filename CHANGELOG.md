@@ -9,6 +9,25 @@ releases are cut.
 
 ## [Unreleased]
 
+### Added
+
+**MCP server**
+
+- `list_memories` — enumerate memories with conjunctive tag filtering,
+  pagination, and newest/oldest ordering. Uses database queries only and does
+  not perform embedding or similarity scoring.
+
+**Python library**
+
+- `MemoryStore.list()` — list memories with SQL-side tag filtering,
+  pagination, total counts, and newest/oldest ordering without loading the
+  embedding model.
+
+**CLI**
+
+- `list` — browse memories by tag with pagination and newest/oldest ordering.
+  Supports `--json` for machine-readable output.
+
 ## [0.1.1] — 2026-08-14
 
 ### Added

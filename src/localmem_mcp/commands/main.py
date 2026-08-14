@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 
 from ..core import DEFAULT_MODEL, MemoryStore
-from .handlers import handle_add, handle_forget, handle_recall, handle_search, handle_stats
+from .handlers import (handle_add,handle_forget,handle_list,handle_recall,handle_search,handle_stats,)
 from .parser import _build_parser
 
 
@@ -42,6 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         "add": handle_add,
         "search": handle_search,
         "recall": handle_recall,
+        "list": handle_list,
         "forget": handle_forget,
         "stats": handle_stats,
     }

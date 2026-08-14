@@ -138,6 +138,101 @@ def test_recent_filters_by_tags(store):
     assert recent[0].content == "tagged memory"
 
 
+def test_list_returns_newest_first_with_total(store):
+    first = store.add("first memory")
+    second = store.add("second memory")
+    third = store.add("third memory")
+
+    memories, total = store.list()
+
+    assert total == 3
+    assert [m.id for m in memories] == [third.id, second.id, first.id]
+
+
+def test_list_returns_oldest_first(store):
+    first = store.add("first memory")
+    second = store.add("second memory")
+    third = store.add("third memory")
+
+    memories, total = store.list(order="oldest")
+
+    assert total == 3
+    assert [m.id for m in memories] == [first.id, second.id, third.id]
+
+
+def test_list_filters_by_all_tags(store):
+    both = store.add("both tags", tags=["decision", "project"])
+    store.add("decision only", tags=["decision"])
+    store.add("project only", tags=["project"])
+
+    memories, total = store.list(tags=["decision", "project"])
+
+    assert total == 1
+    assert [m.id for m in memories] == [both.id]
+
+
+def test_list_paginates_without_overlap_or_gaps(store):
+    memories = [store.add(f"memory {number}") for number in range(5)]
+
+    first_page, total = store.list(limit=2, offset=0)
+    second_page, second_total = store.list(limit=2, offset=2)
+    third_page, third_total = store.list(limit=2, offset=4)
+
+    assert total == 5
+    assert second_total == 5
+    assert third_total == 5
+
+    first_ids = [m.id for m in first_page]
+    second_ids = [m.id for m in second_page]
+    third_ids = [m.id for m in third_page]
+
+    assert first_ids == [memories[4].id, memories[3].id]
+    assert second_ids == [memories[2].id, memories[1].id]
+    assert third_ids == [memories[0].id]
+
+    assert first_ids + second_ids + third_ids == [
+        memory.id for memory in reversed(memories)
+    ]
+
+
+def test_list_returns_empty_store(store):
+    memories, total = store.list()
+
+    assert memories == []
+    assert total == 0
+
+
+def test_list_does_not_call_embedder():
+    class CountingEmbedder(StubEmbedder):
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def embed(self, texts: Sequence[str]) -> list[list[float]]:
+            self.calls += len(texts)
+            return super().embed(texts)
+
+    with MemoryStore(db_path=":memory:", embedder=CountingEmbedder()) as store:
+        store.add("a decision about sqlite", tags=["decision"])
+        assert store.embedder.calls == 1
+
+        memories, total = store.list(tags=["decision"])
+
+        assert total == 1
+        assert memories[0].content == "a decision about sqlite"
+        assert store.embedder.calls == 1
+
+
+def test_list_validates_arguments(store):
+    with pytest.raises(ValueError, match="limit must be positive"):
+        store.list(limit=0)
+
+    with pytest.raises(ValueError, match="offset must be non-negative"):
+        store.list(offset=-1)
+
+    with pytest.raises(ValueError, match="order must be"):
+        store.list(order="random")
+
+
 def test_delete_removes_memory(store):
     memory = store.add("temporary note about tea")
 
