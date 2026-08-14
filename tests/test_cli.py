@@ -58,6 +58,14 @@ def test_shared_flag_defaults_when_unset():
     assert as_json is False
 
 
+def test_model_environment_variable_is_used_when_flag_is_unset(monkeypatch):
+    monkeypatch.setenv("LOCALMEM_MODEL", "BAAI/bge-base-en-v1.5")
+
+    _, model_name, _ = _parse(["stats"])
+
+    assert model_name == "BAAI/bge-base-en-v1.5"
+
+
 @pytest.mark.parametrize(
     "argv",
     [["--model", "custom/model", "stats"], ["stats", "--model", "custom/model"]],
