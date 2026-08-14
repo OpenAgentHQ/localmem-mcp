@@ -5,8 +5,8 @@
 **Give your AI agent a memory that never leaves your machine.**
 
 [![CI](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
-[![Python](https://img.shields.io/pypi/pyversions/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
+[![PyPI - Version](https://img.shields.io/pypi/v/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
+[![PyPI - Python Versions](https://img.shields.io/pypi/pyversions/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-server-blueviolet)](https://modelcontextprotocol.io)
 [![Docs](https://img.shields.io/badge/docs-openagenthq.github.io-5b4bc4)](https://openagenthq.github.io/localmem-mcp/)
