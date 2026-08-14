@@ -146,6 +146,75 @@ def test_delete_removes_memory(store):
     assert store.delete(memory.id) is False
 
 
+def test_update_content_reembeds_and_preserves_created_at(store):
+    memory = store.add("We picked postgres for storage")
+    store.add("I drink coffee every morning")
+
+    updated = store.update(memory.id, content="We picked sqlite as the database")
+
+    assert updated is not None
+    assert updated.id == memory.id
+    assert updated.content == "We picked sqlite as the database"
+    assert updated.created_at == memory.created_at
+    assert updated.updated_at >= memory.updated_at
+
+    # Re-embedding means search finds the corrected text, not the stale original.
+    results = store.search("which database did we pick?", limit=3)
+    assert results[0].memory.id == memory.id
+
+
+def test_update_tag_only_skips_embedding():
+    class CountingEmbedder(StubEmbedder):
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def embed(self, texts: Sequence[str]) -> list[list[float]]:
+            self.calls += len(texts)
+            return super().embed(texts)
+
+    with MemoryStore(db_path=":memory:", embedder=CountingEmbedder()) as s:
+        memory = s.add("sqlite is the database", tags=["old"])
+        assert s.embedder.calls == 1
+
+        updated = s.update(memory.id, tags=["new"])
+        assert updated is not None
+        assert updated.content == "sqlite is the database"
+        assert updated.tags == ["new"]
+        assert s.embedder.calls == 1  # tags aren't embedded — no re-embed
+
+        s.update(memory.id, content="sqlite is the database")
+        assert s.embedder.calls == 2  # a content change does re-embed
+
+
+def test_update_missing_id_returns_none(store):
+    assert store.update(4242, content="anything") is None
+
+
+def test_update_rejects_empty_content(store):
+    memory = store.add("a note about tea")
+    with pytest.raises(ValueError):
+        store.update(memory.id, content="   ")
+
+
+def test_update_with_no_changes_raises(store):
+    memory = store.add("a note about tea")
+    with pytest.raises(ValueError):
+        store.update(memory.id)
+
+
+def test_update_refreshes_fts_index(store):
+    """The AFTER UPDATE trigger re-syncs the FTS row with the new content."""
+    memory = store.add("The deploy key is stored in the vault")
+
+    store.update(memory.id, content="The deploy key is stored in the safe")
+
+    row = store._conn.execute(
+        "SELECT content FROM memories_fts WHERE rowid = ?", (memory.id,)
+    ).fetchone()
+    assert row is not None
+    assert row["content"] == "The deploy key is stored in the safe"
+
+
 def test_count_and_stats(store):
     store.add("one")
     store.add("two")

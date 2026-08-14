@@ -1,4 +1,4 @@
-"""FastMCP server exposing localmem's three memory tools over stdio."""
+"""FastMCP server exposing localmem's four memory tools over stdio."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ mcp = FastMCP(
         "Local-first, private long-term memory. Use store_memory to save durable "
         "facts, decisions, and preferences worth remembering across sessions; "
         "search_memory to find them by meaning; recall_memory to re-read a "
-        "specific memory or the most recent ones. Everything stays on this "
-        "machine."
+        "specific memory or the most recent ones; update_memory to correct a "
+        "stored memory. Everything stays on this machine."
     ),
 )
 
@@ -128,6 +128,38 @@ def recall_memory(memory_id: int | None = None, limit: int = 5) -> dict[str, Any
         "count": len(memories),
         "memories": [memory.to_dict() for memory in memories],
     }
+
+
+@mcp.tool
+def update_memory(
+    memory_id: int,
+    content: str | None = None,
+    tags: list[str] | None = None,
+    source: str | None = None,
+) -> dict[str, Any]:
+    """Correct an existing memory in place.
+
+    Use this when a stored memory is wrong — a misremembered decision, a
+    misspelled name, a fact that has since changed. It edits the original record
+    rather than adding a related one, and re-embeds the text so search finds the
+    correction. Only the fields you pass are changed.
+
+    Args:
+        memory_id: The id of the memory to correct, from a previous
+            store_memory or search_memory call.
+        content: The corrected memory text. Re-embeds the memory when changed.
+        tags: Replacement tags. Omit to keep the current tags.
+        source: Replacement source. Omit to keep the current source.
+
+    Returns:
+        The corrected memory, or {"found": false} if the id doesn't exist.
+    """
+    memory = get_store().update(
+        memory_id=memory_id, content=content, tags=tags, source=source
+    )
+    if memory is None:
+        return {"found": False, "memory_id": memory_id, "memory": None}
+    return {"found": True, "memory_id": memory_id, "memory": memory.to_dict()}
 
 
 @mcp.tool
