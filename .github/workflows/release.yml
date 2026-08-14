@@ -1,18 +1,63 @@
 name: release
 
-# Publishes to PyPI via Trusted Publishing (OIDC). No API tokens, no secrets.
+# Publishes to PyPI via Trusted Publishing (OIDC) and cuts the matching GitHub
+# Release. No API tokens, no secrets.
+#
+# Two ways in:
+#   1. Push a tag (git push origin v0.1.0) — the normal path.
+#   2. Run this workflow manually with a `tag` input. The tag is created here,
+#      which is the way out when you can't push tags from where you are.
 on:
   push:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release, e.g. v0.1.0. Created if it doesn't exist yet."
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
+  resolve:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Determine tag and version
+        id: v
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="${INPUT_TAG}"
+          fi
+          VERSION="${TAG#v}"
+
+          # The tag and pyproject.toml must agree, or the GitHub Release ends up
+          # advertising a version PyPI never received.
+          PROJECT_VERSION=$(python -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          if [ "${VERSION}" != "${PROJECT_VERSION}" ]; then
+            echo "::error::Tag ${TAG} implies version ${VERSION}, but pyproject.toml says ${PROJECT_VERSION}. Bump one or the other."
+            exit 1
+          fi
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Releasing ${TAG} (version ${VERSION})"
+
   build:
     name: Build distributions
+    needs: resolve
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -39,7 +84,7 @@ jobs:
 
   publish:
     name: Publish to PyPI
-    needs: build
+    needs: [resolve, build]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -54,3 +99,62 @@ jobs:
 
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # A version already on PyPI can never be replaced, so a re-run must
+          # not fail the whole release — the GitHub Release job still has work
+          # to do afterwards.
+          skip-existing: true
+
+  github-release:
+    name: Create GitHub Release
+    needs: [resolve, build, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the tag and the release
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Extract this version's changelog section
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+        run: |
+          python - <<'PY' > notes.md
+          import os, re, pathlib
+          version = os.environ["VERSION"]
+          text = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          # Everything under "## [x.y.z]" up to whichever comes first: the next
+          # version heading, the link-definition block at the bottom, or the end
+          # of the file. The newest release is the last section, so stopping
+          # only at the next heading would match nothing.
+          match = re.search(
+              rf"^##\s*\[{re.escape(version)}\].*?$(.*?)(?=^##\s*\[|^\[[^\]]+\]:|\Z)",
+              text,
+              re.S | re.M,
+          )
+          print((match.group(1).strip() if match else f"Release {version}."))
+          PY
+          head -5 notes.md
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+        # --target only applies when the tag doesn't exist yet, so this is
+        # correct for both entry points. Idempotent: an existing release is
+        # updated rather than failing the run.
+        run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release edit "${TAG}" --notes-file notes.md
+            gh release upload "${TAG}" dist/* --clobber
+          else
+            gh release create "${TAG}" dist/* \
+              --title "${TAG}" \
+              --notes-file notes.md \
+              --target "${GITHUB_SHA}"
+          fi
+          gh release view "${TAG}" --json tagName,name,isDraft,url

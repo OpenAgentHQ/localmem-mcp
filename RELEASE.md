@@ -60,38 +60,56 @@ git push -u origin claude/release-0.1.0
 # open the PR, get it green, merge
 ```
 
-Then tag the merge commit on `main`:
+Then release, either way round:
 
-```bash
-git checkout main && git pull
-git tag -a v0.1.0 -m "v0.1.0"
-git push origin v0.1.0
-```
+=== "Push a tag (normal path)"
 
-Pushing the tag is what triggers the release. The tag must start with `v`; the
-workflow only listens for `v*`.
+    ```bash
+    git checkout main && git pull
+    git tag -a v0.1.0 -m "v0.1.0"
+    git push origin v0.1.0
+    ```
+
+    Pushing the tag triggers the workflow. It must start with `v`; the workflow
+    only listens for `v*`.
+
+=== "Run the workflow manually"
+
+    Actions → **release** → *Run workflow*, and give it the tag, e.g. `v0.1.0`.
+
+    The workflow creates the tag itself. Use this when you can't push tags from
+    where you are — a sandboxed environment, or credentials scoped to branches
+    only.
+
+Either way the workflow refuses to proceed unless the tag and the `version` in
+`pyproject.toml` agree, so a release can't advertise a version PyPI never got.
 
 ## What the workflow does
 
 ```mermaid
 flowchart LR
-    A[git push origin v0.1.0] --> B[build job]
+    A[tag push<br/>or manual dispatch] --> R[resolve job<br/>tag ↔ pyproject check]
+    R --> B[build job]
     B --> C[python -m build]
     C --> D[twine check]
     D --> E[upload artifact]
     E --> F[publish job]
-    F --> G[download artifact]
-    G --> H[pypa/gh-action-pypi-publish<br/>OIDC, no secrets]
+    F --> H[pypa/gh-action-pypi-publish<br/>OIDC, no secrets]
     H --> I[(PyPI)]
+    H --> J[github-release job]
+    J --> K[tag + GitHub Release<br/>changelog body, dists attached]
 ```
 
-The split into two jobs is deliberate: metadata problems fail at `twine check`,
-before anything is uploadable. The publish job is the only one with
-`id-token: write`, and it's scoped to the `pypi` environment.
+The split into jobs is deliberate. `resolve` fails fast if the tag and
+`pyproject.toml` disagree. Metadata problems fail at `twine check`, before
+anything is uploadable. The publish job is the only one with `id-token: write`
+and is scoped to the `pypi` environment; only `github-release` gets
+`contents: write`.
 
-`workflow_dispatch` is also enabled, which is useful for re-running a publish
-after a transient failure — but note it builds from the branch you dispatch it
-on, not from a tag.
+**Re-runs are safe.** Publishing uses `skip-existing`, so a version already on
+PyPI doesn't fail the run — which matters, because the GitHub Release job still
+has work to do afterwards. Creating the release is idempotent too: an existing
+one is updated rather than duplicated.
 
 ## After the release
 
@@ -102,7 +120,8 @@ on, not from a tag.
    uvx localmem-mcp --version
    ```
 
-3. **Cut a GitHub Release** for the tag, with the changelog section as the body.
+3. **Check the GitHub Release** — the workflow creates it from the changelog
+   section and attaches the wheel and sdist. Nothing to do by hand.
 4. **Check the docs deployed** — <https://openagenthq.github.io/localmem-mcp/>
    publishes from `main`, so it will already reflect the release.
 
