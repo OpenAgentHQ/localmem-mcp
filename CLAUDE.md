@@ -65,13 +65,15 @@ with `mkdocs serve` after `pip install -e ".[docs]"`; CI builds it with
 **Every task gets its own branch and its own PR. No exceptions.**
 
 Start each new piece of work — a feature, a fix, a docs change, a one-line typo
-— by cutting a fresh branch:
+— by cutting a fresh branch from `main`:
 
 ```bash
+git checkout main && git pull
 git checkout -b claude/<short-description>
 ```
 
-When the work is done, push that branch and open a **new** PR for it.
+When the work is done, push that branch and open a **new** PR **targeting
+`main`**. Every PR targets `main` — never another feature branch.
 
 Never add commits to a branch that already has an open PR in order to
 accomplish a *different* task. If a task is finished and a new request comes in,
@@ -82,14 +84,15 @@ two unrelated changes into one merge decision.
 Follow-up commits to an existing PR are only for that PR's own work — addressing
 review feedback, fixing its CI, or completing something it left unfinished.
 
-When new work builds on a branch that hasn't merged yet, branch off that branch
-and target it as the PR base. The stacked PR then shows only the new diff, and
-GitHub retargets it to `main` automatically once the parent merges.
+**No stacked PRs.** Even when new work depends on a branch that hasn't merged
+yet, the PR still targets `main`. The trade-off is deliberate and worth knowing:
+until the parent merges, such a PR's diff also contains the parent's commits, so
+reviewers see more than the new work alone. Merging in dependency order clears
+it — each PR's diff shrinks to just its own changes once what it built on has
+landed.
 
-```bash
-git checkout -b claude/new-thing            # from the unmerged parent branch
-# open the PR with base: <parent-branch>, not main
-```
+If the overlap makes a PR genuinely unreviewable, the fix is to merge the parent
+first, not to retarget the base.
 
 Never push to `main` directly, and never force-push a branch with an open PR.
 
