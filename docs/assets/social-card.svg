@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="localmem-mcp — give your AI agent a memory that never leaves your machine">
   <title>localmem-mcp</title>
-  <desc>Social preview card: local-first memory for AI agents, backed by SQLite and on-device embeddings.</desc>
+  <desc>Social preview card: the wordmark above a terminal session that stores a decision and recalls it in a later session, with zero network calls.</desc>
 
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -8,18 +8,9 @@
       <stop offset="0.55" stop-color="#1a1815"/>
       <stop offset="1" stop-color="#12110f"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#b8552f"/>
-      <stop offset="1" stop-color="#e5a077"/>
-    </linearGradient>
-    <linearGradient id="cyl" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#c9622f"/>
-      <stop offset="1" stop-color="#8f421f"/>
-    </linearGradient>
-    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#e08a63" stop-opacity="0"/>
-      <stop offset="0.5" stop-color="#e08a63"/>
-      <stop offset="1" stop-color="#e08a63" stop-opacity="0"/>
+    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#211e1a"/>
+      <stop offset="1" stop-color="#1a1815"/>
     </linearGradient>
     <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
       <stop offset="0" stop-color="#e08a63" stop-opacity="0.14"/>
@@ -32,54 +23,36 @@
 
   <rect x="0" y="0" width="1280" height="640" fill="url(#bg)"/>
   <rect x="0" y="0" width="1280" height="640" fill="url(#dots)"/>
-  <ellipse cx="640" cy="250" rx="520" ry="360" fill="url(#glow)"/>
+  <ellipse cx="640" cy="180" rx="560" ry="360" fill="url(#glow)"/>
 
-  <g text-anchor="middle" font-family="Inter, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
-    <text x="640" y="146" font-size="16" font-weight="600" letter-spacing="4" fill="#9b978d">MCP SERVER · PYTHON LIBRARY</text>
-    <text x="640" y="252" font-size="86" font-weight="700" letter-spacing="-2.4" fill="#f5f2ea">localmem-mcp</text>
-    <text x="640" y="318" font-size="30" font-weight="500" fill="#cbc5b8">Give your AI agent a memory that never leaves your machine.</text>
-    <text x="640" y="356" font-size="21" fill="#8e8a80">No cloud. No API keys. No per-call billing.</text>
+  <!-- wordmark -->
+  <g text-anchor="middle">
+    <text x="640" y="96" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="15" letter-spacing="3.6" fill="#9b978d">MCP SERVER · PYTHON LIBRARY</text>
+    <text x="640" y="168" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="62" font-weight="700" letter-spacing="-1.5" fill="#f5f2ea">localmem-mcp</text>
+    <text x="640" y="212" font-family="Inter, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="24" fill="#cbc5b8">Give your AI agent a memory that never leaves your machine.</text>
   </g>
 
-  <!-- capability chips, centred as one row -->
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="15">
-    <g>
-      <rect x="379" y="392" width="160" height="40" rx="20" fill="#1e1c19" stroke="#35332d"/>
-      <circle cx="401" cy="412" r="3.5" fill="#e08a63"/>
-      <text x="414" y="417" fill="#d5cfc2">SQLite + FTS5</text>
-    </g>
-    <g>
-      <rect x="553" y="392" width="220" height="40" rx="20" fill="#1e1c19" stroke="#35332d"/>
-      <circle cx="575" cy="412" r="3.5" fill="#e08a63"/>
-      <text x="588" y="417" fill="#d5cfc2">on-device embeddings</text>
-    </g>
-    <g>
-      <rect x="787" y="392" width="152" height="40" rx="20" fill="#1e1c19" stroke="#35332d"/>
-      <circle cx="809" cy="412" r="3.5" fill="#e08a63"/>
-      <text x="822" y="417" fill="#d5cfc2">100% offline</text>
-    </g>
+  <!-- terminal window -->
+  <rect x="90" y="256" width="1100" height="330" rx="14" fill="#0f0e0c" stroke="#343029"/>
+  <path d="M90 270 a14 14 0 0 1 14 -14 h1072 a14 14 0 0 1 14 14 v30 h-1100 z" fill="url(#chrome)"/>
+  <line x1="90" y1="300" x2="1190" y2="300" stroke="#2c2822"/>
+  <circle cx="120" cy="278" r="6.5" fill="#d96e5c"/>
+  <circle cx="142" cy="278" r="6.5" fill="#d9a742"/>
+  <circle cx="164" cy="278" r="6.5" fill="#72ad68"/>
+  <text x="640" y="283" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="13.5" fill="#7c786f">localmem-mcp — ~/your-project</text>
+
+  <!-- session -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" xml:space="preserve">
+    <text x="126" y="342"><tspan fill="#e08a63">$ </tspan><tspan fill="#f5f2ea">claude mcp add localmem -- uvx localmem-mcp</tspan></text>
+    <text x="126" y="374"><tspan fill="#72ad68">✓ </tspan><tspan fill="#8e8a80">connected · store_memory · search_memory · recall_memory</tspan></text>
+
+    <text x="126" y="418"><tspan fill="#e08a63">› </tspan><tspan fill="#cbc5b8">"Remember we chose SQLite over Postgres — it ships as one file."</tspan></text>
+    <text x="126" y="450"><tspan fill="#72ad68">✓ </tspan><tspan fill="#8e8a80">stored #1 · tags: decision, architecture · </tspan><tspan fill="#e5a077">0 network calls</tspan></text>
+
+    <text x="126" y="494"><tspan fill="#e08a63">› </tspan><tspan fill="#cbc5b8">"What database did we pick, and why?"</tspan><tspan fill="#57544d">   // new session, tomorrow</tspan></text>
+    <text x="126" y="526"><tspan fill="#72ad68">✓ </tspan><tspan fill="#8e8a80">recalled #1 · score </tspan><tspan fill="#e5a077">0.87</tspan><tspan fill="#8e8a80"> · "We chose SQLite over Postgres…"</tspan></text>
+
+    <text x="126" y="562"><tspan fill="#e08a63">$ </tspan></text>
   </g>
-
-  <!-- one file, on your own disk -->
-  <g>
-    <rect x="360" y="470" width="560" height="130" rx="16" fill="#191714" stroke="#332f29"/>
-    <circle cx="388" cy="500" r="4" fill="#3d3931"/>
-    <circle cx="404" cy="500" r="4" fill="#3d3931"/>
-    <circle cx="420" cy="500" r="4" fill="#3d3931"/>
-    <text x="440" y="505" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="13" fill="#7c786f">~/.localmem/memories.db</text>
-    <line x1="360" y1="522" x2="920" y2="522" stroke="#282520"/>
-
-    <g>
-      <path d="M392 548 v30 a30 9 0 0 0 60 0 v-30 z" fill="url(#cyl)"/>
-      <ellipse cx="422" cy="548" rx="30" ry="9" fill="#e5a077"/>
-      <ellipse cx="422" cy="566" rx="30" ry="9" fill="none" stroke="#f5f2ea" stroke-opacity="0.16"/>
-    </g>
-
-    <g>
-      <rect x="480" y="547" width="410" height="12" rx="6" fill="#242119"/>
-      <rect x="480" y="547" width="338" height="12" rx="6" fill="url(#accent)"/>
-      <rect x="480" y="571" width="410" height="12" rx="6" fill="#242119"/>
-      <rect x="480" y="571" width="228" height="12" rx="6" fill="url(#accent)" opacity="0.7"/>
-    </g>
-  </g>
+  <rect x="148" y="548" width="10" height="19" fill="#e5a077" opacity="0.85"/>
 </svg>
