@@ -739,3 +739,37 @@ def test_list_does_not_invoke_embedder():
 
         s.list()
         assert TrackingEmbedder.called is False
+
+
+def test_list_tag_wildcard_escaping(store):
+    store.add("ci_cd memory", tags=["ci_cd"])
+    store.add("ci-cd memory", tags=["ci-cd"])
+    store.add("python memory", tags=["python"])
+
+    res_underscore, total_underscore = store.list(tags=["ci_cd"])
+    assert total_underscore == 1
+    assert [m.content for m in res_underscore] == ["ci_cd memory"]
+
+    res_dash, total_dash = store.list(tags=["ci-cd"])
+    assert total_dash == 1
+    assert [m.content for m in res_dash] == ["ci-cd memory"]
+
+
+def test_list_tag_percent_wildcard_escaping(store):
+    store.add("percent memory", tags=["100%"])
+    store.add("xyz memory", tags=["100xyz"])
+
+    res, total = store.list(tags=["100%"])
+    assert total == 1
+    assert [m.content for m in res] == ["percent memory"]
+
+
+def test_recent_ordering_preserves_insertion_id_order(store):
+    mem_a = store.add("memory A", created_at="2026-08-15T12:00:00Z")
+    mem_b = store.add("memory B", created_at="2020-01-01T00:00:00Z")
+
+    recent = store.recent()
+    assert [m.id for m in recent[:2]] == [mem_b.id, mem_a.id]
+
+    listed, _ = store.list(order="newest")
+    assert [m.id for m in listed[:2]] == [mem_a.id, mem_b.id]

@@ -69,8 +69,8 @@ So query text is stripped to alphanumerics and each word quoted into an explicit
 `OR` chain:
 
 ```python
-_fts_query('drop "table" AND *')   # → '"drop" OR "table" OR "AND"'
-_fts_query("!!!")                   # → ''
+_fts_query('drop "table" AND *')  # → '"drop" OR "table" OR "AND"'
+_fts_query("!!!")  # → ''
 ```
 
 The FTS query is also wrapped in a `try`/`except`, so a Python build whose
