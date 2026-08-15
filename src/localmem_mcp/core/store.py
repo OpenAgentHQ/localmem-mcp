@@ -7,6 +7,7 @@ fastembed performs on first use.
 
 from __future__ import annotations
 
+import builtins
 import json
 import sqlite3
 import threading
@@ -96,8 +97,9 @@ class MemoryStore:
                     len(vector),
                 ),
             )
+        assert cursor.lastrowid is not None
         return Memory(
-            id=int(cursor.lastrowid),
+            id=cursor.lastrowid,
             content=content,
             tags=tag_list,
             source=source,
@@ -120,8 +122,8 @@ class MemoryStore:
         leaves the vector alone. ``created_at`` is preserved and ``updated_at``
         refreshed. The FTS5 index stays in sync via the AFTER UPDATE trigger.
         """
-        sets: list[str] = []
-        params: list[Any] = []
+        sets: builtins.list[str] = []
+        params: builtins.list[Any] = []
 
         if content is not None:
             content = content.strip()
@@ -170,7 +172,7 @@ class MemoryStore:
         self,
         tags: Iterable[str] | str | None = None,
         older_than_days: int | None = None,
-    ) -> list[Memory]:
+    ) -> builtins.list[Memory]:
         """Memories a bulk delete would remove, newest first.
 
         Same filters as :meth:`delete_many`, without deleting — the CLI uses
@@ -231,7 +233,7 @@ class MemoryStore:
         tags: Iterable[str] | str | None = None,
         min_score: float = 0.0,
         offset: int = 0,
-    ) -> list[SearchResult]:
+    ) -> builtins.list[SearchResult]:
         """Semantic search, nudged by exact keyword matches.
 
         Every stored memory is scored by cosine similarity against the query
@@ -256,7 +258,7 @@ class MemoryStore:
         query_vector = self.embedder.embed([query])[0]
         keyword_hits = self._keyword_hits(query)
 
-        results: list[SearchResult] = []
+        results: builtins.list[SearchResult] = []
         for row in rows:
             memory = _row_to_memory(row)
             if tag_list and not _has_tags(memory, tag_list):
