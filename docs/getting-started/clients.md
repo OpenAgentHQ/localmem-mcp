@@ -3,6 +3,13 @@
 localmem-mcp speaks MCP over stdio, so it works with any MCP-compatible client.
 Below are configs for the common ones.
 
+!!! tip "Using something else?"
+
+    [Integrations](../integrations/index.md) has verified configs for more than
+    twenty coding agents — Codex, Gemini CLI, Copilot, Cline, Goose, OpenCode,
+    Zed, JetBrains, and the rest — with the file path and exact shape each one
+    expects.
+
 All of them use the same shape: run `uvx localmem-mcp`. If you installed with
 `pip` instead, replace `"command": "uvx", "args": ["localmem-mcp"]` with
 `"command": "localmem-mcp"` and drop the `args`.
@@ -103,6 +110,12 @@ uvx localmem-mcp
 Point your client's stdio transport at that command. If the client lets you pass
 environment variables, [configuration](../guide/configuration.md) is done that
 way.
+
+For a specific agent — Codex, Gemini CLI, Copilot CLI, Goose, OpenCode, Crush,
+Amp, Amazon Q, Cline, Roo Code, Kilo Code, Continue, JetBrains, Trae, Warp,
+Antigravity, and more — [Integrations](../integrations/index.md) has the exact
+config file and shape for each. Worth checking before you improvise: several
+agents use a different root key and fail silently when they get the wrong one.
 
 ## Per-project memory
 

@@ -14,8 +14,7 @@ Just SQLite and local embeddings.
 
 **[📖 Read the docs →](https://openagenthq.github.io/localmem-mcp/)**
 
-<!-- TODO: replace with demo.gif — agent stores a fact in one session, recalls it in the next -->
-<img src="docs/demo.gif" alt="localmem-mcp demo" width="720">
+<img src="docs/assets/demo.gif" alt="Registering localmem with three different agents, storing a decision in one session, and recalling it from a different agent days later — with no network calls" width="820">
 
 </div>
 
@@ -55,6 +54,22 @@ That's it. Your agent now remembers, and nothing left your laptop.
 ```bash
 pip install localmem-mcp     # then use "command": "localmem-mcp" in the config above
 ```
+
+</details>
+
+<details>
+<summary>Using a different coding agent?</summary>
+
+The config above covers most clients, but several agents want a different shape —
+and get it wrong silently. VS Code's root key is `servers`; Codex uses TOML;
+OpenCode and Kilo Code take `command` as an array; Goose calls them extensions;
+Zed nests them under `context_servers`.
+
+**[Integrations →](https://openagenthq.github.io/localmem-mcp/integrations/)** has
+the verified config for 20+ agents: Claude Code, Codex, Gemini CLI, Copilot CLI,
+Goose, OpenCode, Crush, Amp, Amazon Q, Qwen Code, Junie, Antigravity, Warp,
+Cursor, Windsurf, Zed, VS Code, JetBrains, Trae, Cline, Roo Code, Kilo Code,
+Continue, and Claude Desktop.
 
 </details>
 
