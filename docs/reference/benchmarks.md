@@ -80,6 +80,27 @@ different term — the *number* of rows scored — and only starts to pay once
 per-row scoring is cheap. See
 [Why a full table scan](../guide/how-search-works.md#why-a-full-table-scan).
 
+### Would an index help?
+
+Measured, rather than argued about.
+[`benchmarks/sqlite_vec_eval.py`](https://github.com/OpenAgentHQ/localmem-mcp/blob/main/benchmarks/sqlite_vec_eval.py)
+runs the same queries through the current loop, a vectorised scan, and
+[sqlite-vec](https://github.com/asg017/sqlite-vec) KNN:
+
+| memories | today | vectorised scan | sqlite-vec |
+| --- | --- | --- | --- |
+| 1,000 | 43.9 ms | 6.5 ms | 5.6 ms |
+| 10,000 | 466.0 ms | 69.3 ms | 20.8 ms |
+| 100,000 | 4,815.3 ms | 1,313.0 ms | 134.6 ms |
+
+Both alternatives returned exactly the same top 5 as the exact scan at every
+size — sqlite-vec's KNN is brute force, so it is exact rather than approximate.
+Vectorising is enough up to ~10k; past that, the index is what avoids either a
+per-query read of every embedding or a cache of the whole corpus in memory. The
+full write-up, including recall, install footprint, and the platforms where the
+extension cannot load at all, is in
+[`benchmarks/SQLITE_VEC.md`](https://github.com/OpenAgentHQ/localmem-mcp/blob/main/benchmarks/SQLITE_VEC.md).
+
 ## Running it yourself
 
 ```bash
