@@ -7,6 +7,7 @@ fastembed performs on first use.
 
 from __future__ import annotations
 
+import builtins
 import json
 import sqlite3
 import threading
@@ -96,8 +97,9 @@ class MemoryStore:
                     len(vector),
                 ),
             )
+        assert cursor.lastrowid is not None
         return Memory(
-            id=int(cursor.lastrowid),
+            id=cursor.lastrowid,
             content=content,
             tags=tag_list,
             source=source,
@@ -120,8 +122,8 @@ class MemoryStore:
         leaves the vector alone. ``created_at`` is preserved and ``updated_at``
         refreshed. The FTS5 index stays in sync via the AFTER UPDATE trigger.
         """
-        sets: list[str] = []
-        params: list[Any] = []
+        sets: builtins.list[str] = []
+        params: builtins.list[Any] = []
 
         if content is not None:
             content = content.strip()
@@ -166,7 +168,7 @@ class MemoryStore:
         self,
         tags: Iterable[str] | str | None = None,
         older_than_days: int | None = None,
-    ) -> list[Memory]:
+    ) -> builtins.list[Memory]:
         """Memories a bulk delete would remove, newest first.
 
         Same filters as :meth:`delete_many`, without deleting — the CLI uses
@@ -208,7 +210,7 @@ class MemoryStore:
         limit: int = 20,
         offset: int = 0,
         order: str = "newest",
-    ) -> tuple[list[Memory], int]:
+    ) -> tuple[builtins.list[Memory], int]:
         """List stored memories with tag filtering, ordering, and pagination.
 
         Returns ``(memories, total_count)`` where ``total_count`` is the total
@@ -224,8 +226,8 @@ class MemoryStore:
         if offset < 0:
             raise ValueError("offset must be non-negative")
 
-        clauses: list[str] = []
-        params: list[Any] = []
+        clauses: builtins.list[str] = []
+        params: builtins.list[Any] = []
         for tag in tag_list:
             clauses.append("(',' || tags || ',') LIKE ?")
             params.append(f"%,{tag},%")
@@ -248,7 +250,9 @@ class MemoryStore:
         memories = [_row_to_memory(row) for row in rows]
         return memories, total
 
-    def recent(self, limit: int = 10, tags: Iterable[str] | str | None = None) -> list[Memory]:
+    def recent(
+        self, limit: int = 10, tags: Iterable[str] | str | None = None
+    ) -> builtins.list[Memory]:
         """Most recently stored memories, newest first."""
         memories, _ = self.list(tags=tags, limit=max(1, limit), offset=0, order="newest")
         return memories
@@ -260,7 +264,7 @@ class MemoryStore:
         tags: Iterable[str] | str | None = None,
         min_score: float = 0.0,
         offset: int = 0,
-    ) -> list[SearchResult]:
+    ) -> builtins.list[SearchResult]:
         """Semantic search, nudged by exact keyword matches.
 
         Every stored memory is scored by cosine similarity against the query
@@ -285,7 +289,7 @@ class MemoryStore:
         query_vector = self.embedder.embed([query])[0]
         keyword_hits = self._keyword_hits(query)
 
-        results: list[SearchResult] = []
+        results: builtins.list[SearchResult] = []
         for row in rows:
             memory = _row_to_memory(row)
             if tag_list and not _has_tags(memory, tag_list):
