@@ -8,6 +8,13 @@ These pages give you the exact file and the exact snippet for each agent —
 checked against that agent's own documentation, not transcribed from another
 one's.
 
+![Registering localmem with three different agents, storing a decision in one
+session, and recalling it from a different agent days later — with no network
+calls](../assets/demo.gif){ .lm-demo }
+
+Register it once per agent, and they all read the same memories out of the same
+SQLite file. Store a decision in Cursor on Monday; Zed finds it on Thursday.
+
 <div class="grid cards" markdown>
 
 -   :material-console: **Terminal agents**

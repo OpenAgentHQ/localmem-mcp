@@ -629,3 +629,14 @@ pre {
     text-align: center;
   }
 }
+
+/* Demo GIF on the Integrations page. Matches the terminal card's framing so the
+   synthesized session reads as part of the page rather than a pasted screenshot. */
+.md-typeset .lm-demo {
+  display: block;
+  width: 100%;
+  max-width: 47em;
+  margin: 1.75rem 0 2rem;
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius);
+}

@@ -14,8 +14,7 @@ Just SQLite and local embeddings.
 
 **[📖 Read the docs →](https://openagenthq.github.io/localmem-mcp/)**
 
-<!-- TODO: replace with demo.gif — agent stores a fact in one session, recalls it in the next -->
-<img src="docs/demo.gif" alt="localmem-mcp demo" width="720">
+<img src="docs/assets/demo.gif" alt="Registering localmem with three different agents, storing a decision in one session, and recalling it from a different agent days later — with no network calls" width="820">
 
 </div>
 
