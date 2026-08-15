@@ -58,6 +58,22 @@ pip install localmem-mcp     # then use "command": "localmem-mcp" in the config 
 
 </details>
 
+<details>
+<summary>Using a different coding agent?</summary>
+
+The config above covers most clients, but several agents want a different shape —
+and get it wrong silently. VS Code's root key is `servers`; Codex uses TOML;
+OpenCode and Kilo Code take `command` as an array; Goose calls them extensions;
+Zed nests them under `context_servers`.
+
+**[Integrations →](https://openagenthq.github.io/localmem-mcp/integrations/)** has
+the verified config for 20+ agents: Claude Code, Codex, Gemini CLI, Copilot CLI,
+Goose, OpenCode, Crush, Amp, Amazon Q, Qwen Code, Junie, Antigravity, Warp,
+Cursor, Windsurf, Zed, VS Code, JetBrains, Trae, Cline, Roo Code, Kilo Code,
+Continue, and Claude Desktop.
+
+</details>
+
 ## The three tools
 
 | Tool | What the agent uses it for |

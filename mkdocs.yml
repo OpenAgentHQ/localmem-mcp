@@ -55,6 +55,12 @@ nav:
       - Installation: getting-started/installation.md
       - Quickstart: getting-started/quickstart.md
       - Connect your client: getting-started/clients.md
+  - Integrations:
+      - Overview: integrations/index.md
+      - Terminal agents: integrations/cli-agents.md
+      - IDEs and editors: integrations/ide-agents.md
+      - VS Code extensions: integrations/vscode-extensions.md
+      - Desktop and custom: integrations/desktop-and-custom.md
   - Guide:
       - MCP tools: guide/mcp-tools.md
       - Command line: guide/cli.md

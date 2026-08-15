@@ -124,6 +124,9 @@ file you can read, back up, or delete.
 
 - **New here?** [Install it](getting-started/installation.md), then
   [connect your client](getting-started/clients.md).
+- **Using a specific agent?** [Integrations](integrations/index.md) has verified
+  configs for 20+ coding agents, from Claude Code and Cursor to Codex, Goose,
+  Cline, and Zed.
 - **Want the tool details?** The [MCP tools reference](guide/mcp-tools.md)
   covers all four tools and their arguments.
 - **Curious how it works?** [Architecture](reference/architecture.md) walks the
