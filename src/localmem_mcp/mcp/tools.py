@@ -105,6 +105,42 @@ def recall_memory(memory_id: int | None = None, limit: int = 5) -> dict[str, Any
 
 
 @mcp.tool
+def list_memories(
+    tags: list[str] | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    order: str = "newest",
+) -> dict[str, Any]:
+    """Enumerate memories with tag filtering, ordering, and pagination.
+
+    Use this to browse stored memories without requiring a search query — to
+    audit memories, paginate through tag categories, or view memories in
+    chronological or reverse-chronological order.
+
+    Filtering and ordering only — no embedding model or scoring is used.
+
+    Args:
+        tags: Only consider memories carrying all of these tags.
+        limit: Maximum number of memories to return (default: 20).
+        offset: Skip this many matching memories before returning `limit` of them.
+        order: Sort order: "newest" (default) or "oldest".
+
+    Returns:
+        Matching memories, total count matching the filters, pagination details, and order.
+    """
+    memories, total = get_store().list(tags=tags, limit=limit, offset=offset, order=order)
+    return {
+        "count": len(memories),
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+        "order": order,
+        "tags": list(tags) if tags else [],
+        "memories": [memory.to_dict() for memory in memories],
+    }
+
+
+@mcp.tool
 def update_memory(
     memory_id: int,
     content: str | None = None,
@@ -128,9 +164,7 @@ def update_memory(
     Returns:
         The corrected memory, or {"found": false} if the id doesn't exist.
     """
-    memory = get_store().update(
-        memory_id=memory_id, content=content, tags=tags, source=source
-    )
+    memory = get_store().update(memory_id=memory_id, content=content, tags=tags, source=source)
     if memory is None:
         return {"found": False, "memory_id": memory_id, "memory": None}
     return {"found": True, "memory_id": memory_id, "memory": memory.to_dict()}

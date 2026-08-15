@@ -1,7 +1,7 @@
 # MCP tools
 
-localmem-mcp exposes seven tools. Six are the core loop — store, search,
-recall, update, and the two forget tools — and one reports on the database
+localmem-mcp exposes eight tools. Seven are the core loop — store, search,
+recall, list, update, and the two forget tools — and one reports on the database
 itself.
 
 Tool descriptions are written for the model, not for you: each docstring says
@@ -163,6 +163,60 @@ Two modes:
     previous `store_memory` or `search_memory` call — or when you want a
     chronological catch-up. To find memories by meaning, use
     [`search_memory`](#search_memory).
+
+---
+
+## `list_memories`
+
+Enumerate memories with tag filtering, ordering, and pagination without requiring a search query.
+
+```python
+list_memories(
+    tags: list[str] | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    order: str = "newest",
+) -> dict
+```
+
+| Argument | Type | Default | Description |
+| --- | --- | --- | --- |
+| `tags` | `list[str]` | `None` | Only consider memories carrying **all** of these tags. |
+| `limit` | `int` | `20` | Maximum memories to return. |
+| `offset` | `int` | `0` | Skip this many matching memories before returning `limit` of them. |
+| `order` | `str` | `"newest"` | Sort order: `"newest"` or `"oldest"`. |
+
+**Returns** matching memories and total count:
+
+```json
+{
+  "count": 2,
+  "total": 47,
+  "offset": 0,
+  "limit": 20,
+  "order": "newest",
+  "tags": ["decision"],
+  "memories": [
+    {
+      "id": 1,
+      "content": "We chose SQLite over Postgres because it ships in a single file",
+      "tags": ["decision", "architecture"],
+      "source": "conversation",
+      "metadata": {},
+      "created_at": "2026-08-14T11:31:00+00:00",
+      "updated_at": "2026-08-14T11:31:00+00:00"
+    }
+  ]
+}
+```
+
+Tag filtering is **conjunctive** — `tags=["work", "urgent"]` matches only memories carrying both.
+
+Ordering is deterministic (`ORDER BY created_at DESC, id DESC` for `"newest"`, `ASC` for `"oldest"`), so pagination across pages with `limit` and `offset` neither repeats nor skips records.
+
+!!! note "Database-only listing"
+
+    `list_memories` performs filtering and pagination directly in SQL — it does not invoke embedding models, semantic search, or ranking.
 
 ---
 
