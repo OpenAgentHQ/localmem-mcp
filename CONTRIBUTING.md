@@ -139,6 +139,34 @@ Committed results, with the machine they came from, live in
 search path, re-run the harness and update that file in the same PR — including
 the machine spec, since absolute numbers are only comparable within one machine.
 
+### Comparing search strategies
+
+`benchmarks/sqlite_vec_eval.py` answers a narrower question: if the scan were
+done some other way, what would it cost and what would it change? It runs the
+same queries through the current Python loop, a vectorised numpy scan, and
+[sqlite-vec](https://github.com/asg017/sqlite-vec) KNN, then reports latency
+alongside how far each one's top-5 drifts from the exact scan's.
+
+```bash
+.venv/bin/pip install sqlite-vec numpy   # both optional; missing ones are skipped
+.venv/bin/python benchmarks/sqlite_vec_eval.py --sizes 1000,10000
+.venv/bin/python benchmarks/sqlite_vec_eval.py --sizes 10000 --tag-filter ops
+```
+
+| Flag | What it does |
+| --- | --- |
+| `--sizes 1000,10000` | corpus sizes to measure |
+| `--queries 20` | searches to time per size |
+| `--limit 5` | results per query, and the `k` recall is measured at |
+| `--oversample 8` | KNN candidates fetched per requested result |
+| `--tag-filter ops` | repeat every query with a tag filter |
+| `--format json` | machine-readable output |
+
+Findings from the run that closed out the sqlite-vec investigation are in
+[`benchmarks/SQLITE_VEC.md`](benchmarks/SQLITE_VEC.md). Recall is measured
+against the exact scan on every run rather than assumed — for a memory tool, a
+dropped result is the agent claiming it was never told something.
+
 ## Style
 
 - Type hints throughout, with `from __future__ import annotations` at the top.
