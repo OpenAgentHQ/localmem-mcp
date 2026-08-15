@@ -39,6 +39,7 @@ import argparse
 import json
 import sqlite3
 import statistics
+import struct
 import sys
 import tempfile
 import time
@@ -124,8 +125,9 @@ class Strategy:
     index_bytes: int = 0
 
 
-def build_corpus_db(size: int, queries: int, seed: int, path: Path) -> Any:
-    """Populate a store with ``size`` synthetic memories. Returns the corpus."""
+def build_corpus_db(size: int, queries: int, seed: int,
+                    path: Path) -> tuple[Any, MemoryStore]:
+    """Populate a store with ``size`` synthetic memories. Returns it and the corpus."""
     corpus = make_corpus(size, queries, seed)
     store = MemoryStore(db_path=path, embedder=HashEmbedder(DEFAULT_DIM))
     for content, tags in zip(corpus.contents, corpus.tags):
@@ -270,8 +272,7 @@ def search_vec0(store: MemoryStore, query: str, limit: int, oversample: int,
 
 
 def _as_blob(vector: list[float]) -> bytes:
-    import struct
-
+    """Pack a query vector the way vec0 expects it — same float32 layout as storage."""
     return struct.pack(f"{len(vector)}f", *vector)
 
 
