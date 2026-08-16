@@ -56,9 +56,10 @@ def main(argv: list[str] | None = None) -> int:
         "import": handle_import,
         "stats": handle_stats,
     }
-    exit_code = handlers[command](store, args, as_json)
-    store.close()
-    return exit_code
+    try:
+        return handlers[command](store, args, as_json)
+    finally:
+        store.close()
 
 
 if __name__ == "__main__":
