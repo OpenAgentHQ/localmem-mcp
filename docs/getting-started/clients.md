@@ -149,6 +149,45 @@ To verify it connected:
 1. Open the Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`) and run **MCP: List Servers** to view active server status.
 2. In VS Code Chat, check the tools indicator to confirm `localmem` tools (`store_memory`, `search_memory`, etc.) are listed and active.
 
+## OpenClaw
+
+Add localmem with OpenClaw's MCP registry:
+
+```bash
+openclaw mcp add localmem --command uvx --arg localmem-mcp
+```
+
+OpenClaw stores the equivalent configuration here:
+
+- **macOS/Linux** - `~/.openclaw/openclaw.json`
+- **Windows** - `%USERPROFILE%\.openclaw\openclaw.json`
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "localmem": {
+        "command": "uvx",
+        "args": ["localmem-mcp"]
+      }
+    }
+  }
+}
+```
+
+Verify that OpenClaw can start the server and discover its tools:
+
+```bash
+openclaw mcp doctor localmem --probe
+```
+
+In the OpenClaw Control UI, open **Settings -> MCP** (or `/settings/mcp`) and
+confirm that `localmem` is enabled.
+
+If OpenClaw cannot find `uvx`, set `command` to its absolute path (`which uvx`
+on macOS/Linux or `(Get-Command uvx).Source` on Windows). With pip, use the
+absolute path to `localmem-mcp` and omit `args`.
+
 ## Any other MCP client
 
 The server runs over stdio with no arguments:
