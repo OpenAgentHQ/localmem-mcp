@@ -116,6 +116,31 @@ The only network request the package ever makes is the one-time download of the
 embedding model (~90 MB, from Hugging Face) on first use — after that it works
 fully offline. Delete `~/.localmem/memories.db` and the memory is gone.
 
+## Why localmem-mcp
+
+The privacy pitch is the headline, but the cost story matters just as much:
+recall never calls an LLM. `search_memory` is local cosine similarity plus an
+FTS5 keyword bonus, both computed on-device — no tokens spent, no round trip,
+no per-call bill, whether you store ten memories or ten thousand. Most memory
+tools in this space run an LLM on the way in *and* the way out; localmem-mcp
+only ever runs the embedding model, locally, and only on the way in.
+
+| | **localmem-mcp** | OpenMemory MCP (Mem0) | mem0-mcp-server | Zep / Graphiti |
+| --- | --- | --- | --- | --- |
+| Cloud calls | Zero, ever, after the one-time model download | Yes — LLM call to extract facts | Yes — hosted Mem0 platform | Yes — LLM call to build/update the graph |
+| API key required | None | `OPENAI_API_KEY` | `MEM0_API_KEY` | An LLM provider key |
+| LLM on the recall path | No — cosine similarity + FTS5, both local | Yes — LLM involved in storing and recalling | Yes — hosted LLM involved in storing and recalling | Yes — LLM traverses/summarizes the graph |
+| Install footprint | `pip install localmem-mcp` / `uvx localmem-mcp`, no other services | Docker Compose stack (API + vector DB) | Package + a hosted Mem0 account | Self-hosted graph DB + LLM, or hosted Zep Cloud |
+| Datastore | One SQLite file | Qdrant (vector DB) + a history DB | Mem0's hosted store | Neo4j / FalkorDB (graph DB) |
+
+Based on each project's own setup docs as of August 2026 — verify against
+their READMEs before deciding, since requirements like these change fast.
+None of this makes the others *wrong*: a temporal knowledge graph or
+LLM-extracted facts are real capabilities localmem-mcp doesn't have. The
+trade is deliberate — this project stays a SQLite file and an embedding
+model, on purpose, rather than growing into an agent framework or a hosted
+service. See [ROADMAP.md](ROADMAP.md) for where the line is drawn.
+
 ## Architecture
 
 ```
@@ -147,6 +172,16 @@ startup near-instant for clients that spawn it eagerly.
 | `LOCALMEM_MODEL` | `BAAI/bge-small-en-v1.5` | Any model name supported by fastembed. |
 
 Point separate projects at separate databases with `--db` or `LOCALMEM_DB_PATH`.
+
+## Star History
+
+<a href="https://star-history.com/#OpenAgentHQ/localmem-mcp&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=OpenAgentHQ/localmem-mcp&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=OpenAgentHQ/localmem-mcp&type=Date" />
+    <img alt="Star History Chart for OpenAgentHQ/localmem-mcp" src="https://api.star-history.com/svg?repos=OpenAgentHQ/localmem-mcp&type=Date" width="600">
+  </picture>
+</a>
 
 ## Contributing
 
