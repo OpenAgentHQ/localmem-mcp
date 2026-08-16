@@ -61,11 +61,16 @@ def test_percentile_picks_by_rank(bench):
 def test_main_reports_every_size_as_json(bench, tmp_path, capsys):
     exit_code = bench.main(
         [
-            "--sizes", "5,10",
-            "--queries", "2",
-            "--dim", "16",
-            "--db-dir", str(tmp_path),
-            "--format", "json",
+            "--sizes",
+            "5,10",
+            "--queries",
+            "2",
+            "--dim",
+            "16",
+            "--db-dir",
+            str(tmp_path),
+            "--format",
+            "json",
         ]
     )
     assert exit_code == 0
@@ -83,8 +88,21 @@ def test_main_reports_every_size_as_json(bench, tmp_path, capsys):
 
 def test_main_renders_text_and_markdown(bench, tmp_path, capsys):
     for fmt, needle in (("text", "add p50"), ("markdown", "| memories |")):
-        assert bench.main(
-            ["--sizes", "5", "--queries", "1", "--dim", "16",
-             "--db-dir", str(tmp_path), "--format", fmt]
-        ) == 0
+        assert (
+            bench.main(
+                [
+                    "--sizes",
+                    "5",
+                    "--queries",
+                    "1",
+                    "--dim",
+                    "16",
+                    "--db-dir",
+                    str(tmp_path),
+                    "--format",
+                    fmt,
+                ]
+            )
+            == 0
+        )
         assert needle in capsys.readouterr().out

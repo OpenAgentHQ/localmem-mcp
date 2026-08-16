@@ -16,6 +16,7 @@ from .handlers import (
     handle_export,
     handle_forget,
     handle_import,
+    handle_list,
     handle_recall,
     handle_search,
     handle_stats,
@@ -51,14 +52,16 @@ def main(argv: list[str] | None = None) -> int:
         "add": handle_add,
         "search": handle_search,
         "recall": handle_recall,
+        "list": handle_list,
         "forget": handle_forget,
         "export": handle_export,
         "import": handle_import,
         "stats": handle_stats,
     }
-    exit_code = handlers[command](store, args, as_json)
-    store.close()
-    return exit_code
+    try:
+        return handlers[command](store, args, as_json)
+    finally:
+        store.close()
 
 
 if __name__ == "__main__":

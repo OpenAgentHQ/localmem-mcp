@@ -90,7 +90,7 @@ The MCP server is a thin shell over a store you can import directly:
 ```python
 from localmem_mcp import MemoryStore
 
-store = MemoryStore()                       # ~/.localmem/memories.db
+store = MemoryStore()  # ~/.localmem/memories.db
 store.add("We chose SQLite over Postgres", tags=["decision", "architecture"])
 
 for hit in store.search("what database are we using?"):

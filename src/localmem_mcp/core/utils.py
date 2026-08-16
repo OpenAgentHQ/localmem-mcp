@@ -60,6 +60,11 @@ def _unpack(blob: bytes) -> list[float]:
     return list(vec)
 
 
+def _escape_like(s: str) -> str:
+    """Escape SQL LIKE wildcards (%, _, \\) for literal matching."""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def _bulk_filters(
     tags: Iterable[str] | str | None, older_than_days: int | None
 ) -> tuple[str, list[Any]]:
@@ -79,8 +84,8 @@ def _bulk_filters(
     clauses: list[str] = []
     params: list[Any] = []
     for tag in tag_list:
-        clauses.append("(',' || tags || ',') LIKE ?")
-        params.append(f"%,{tag},%")
+        clauses.append("(',' || tags || ',') LIKE ? ESCAPE '\\'")
+        params.append(f"%,{_escape_like(tag)},%")
     if older_than_days is not None:
         clauses.append("created_at < ?")
         params.append(_days_ago(older_than_days))

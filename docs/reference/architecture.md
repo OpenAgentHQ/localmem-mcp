@@ -102,6 +102,7 @@ different threads.
 ```python
 class Embedder(Protocol):
     name: str
+
     def embed(self, texts: Sequence[str]) -> list[list[float]]: ...
 ```
 

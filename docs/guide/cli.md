@@ -92,6 +92,43 @@ Exits with status `1` if the id doesn't exist, so it's safe to use in scripts.
 
 ---
 
+## `list`
+
+List memories with tag filtering, ordering, and pagination without requiring a search query.
+
+```bash
+localmem-mcp list
+localmem-mcp list --tag ops -n 10 --offset 10 --order oldest
+```
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-n`, `--limit` | `20` | Maximum results. |
+| `--offset` | `0` | Skip this many matching memories. |
+| `--tag TAG` | — | Only memories with **all** given tags. Repeatable. |
+| `--order` | `newest` | Sort order: `newest` or `oldest`. |
+
+```
+#7 (2026-08-14T11:31:00+00:00) [ops, process] Deploys go out on Thursdays
+#3 (2026-08-14T10:00:00+00:00) [ops] Release notes are written the day before a deploy
+```
+
+With `--json`, the output includes count, total, offset, limit, order, tags, and matching memories:
+
+```json
+{
+  "count": 2,
+  "total": 47,
+  "offset": 0,
+  "limit": 20,
+  "order": "newest",
+  "tags": ["ops"],
+  "memories": [...]
+}
+```
+
+---
+
 ## `forget`
 
 Delete a memory by id, or bulk-delete by tag and/or age.

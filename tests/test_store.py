@@ -18,9 +18,18 @@ import pytest
 from localmem_mcp.store import Memory, MemoryStore, _days_ago, _fts_query, import_records
 
 VOCAB = [
-    "sqlite", "database", "storage", "postgres",
-    "python", "rust", "language", "typing",
-    "coffee", "tea", "morning", "drink",
+    "sqlite",
+    "database",
+    "storage",
+    "postgres",
+    "python",
+    "rust",
+    "language",
+    "typing",
+    "coffee",
+    "tea",
+    "morning",
+    "drink",
 ]
 
 
@@ -604,3 +613,207 @@ def test_import_dry_run_writes_nothing(store):
     assert report.skipped_duplicates == 1
     assert report.failed == 1
     assert store.count() == 0
+
+
+# -- MemoryStore.list --------------------------------------------------------
+
+
+def test_list_returns_memories_and_total(store):
+    first = store.add("first note")
+    second = store.add("second note")
+
+    memories, total = store.list()
+
+    assert total == 2
+    assert [m.id for m in memories] == [second.id, first.id]
+
+
+def test_list_empty_store(store):
+    memories, total = store.list()
+
+    assert memories == []
+    assert total == 0
+
+
+def test_list_tag_filtering(store):
+    store.add("work note", tags=["work"])
+    store.add("personal note", tags=["personal"])
+
+    memories, total = store.list(tags=["work"])
+
+    assert total == 1
+    assert len(memories) == 1
+    assert memories[0].content == "work note"
+
+
+def test_list_multiple_tags_and_semantics(store):
+    store.add("both tags", tags=["decision", "project"])
+    store.add("only decision", tags=["decision"])
+    store.add("only project", tags=["project"])
+
+    memories, total = store.list(tags=["decision", "project"])
+
+    assert total == 1
+    assert len(memories) == 1
+    assert memories[0].content == "both tags"
+
+
+def test_list_pagination_without_overlap_or_gaps(store):
+    m1 = store.add("note 1")
+    m2 = store.add("note 2")
+    m3 = store.add("note 3")
+    m4 = store.add("note 4")
+    m5 = store.add("note 5")
+
+    page1, total1 = store.list(limit=2, offset=0)
+    page2, total2 = store.list(limit=2, offset=2)
+    page3, total3 = store.list(limit=2, offset=4)
+
+    assert total1 == total2 == total3 == 5
+    assert [m.id for m in page1] == [m5.id, m4.id]
+    assert [m.id for m in page2] == [m3.id, m2.id]
+    assert [m.id for m in page3] == [m1.id]
+
+    all_ids = [m.id for m in page1 + page2 + page3]
+    assert len(all_ids) == len(set(all_ids)) == 5
+
+
+def test_list_ordering(store):
+    m1 = store.add("note 1", created_at="2026-01-01T00:00:00+00:00")
+    m2 = store.add("note 2", created_at="2026-01-02T00:00:00+00:00")
+
+    newest, _ = store.list(order="newest")
+    oldest, _ = store.list(order="oldest")
+
+    assert [m.id for m in newest] == [m2.id, m1.id]
+    assert [m.id for m in oldest] == [m1.id, m2.id]
+
+
+def test_list_stable_pagination_identical_timestamps(store):
+    timestamp = "2026-01-01T00:00:00+00:00"
+    m1 = store.add("note 1", created_at=timestamp)
+    m2 = store.add("note 2", created_at=timestamp)
+    m3 = store.add("note 3", created_at=timestamp)
+
+    p1, _ = store.list(limit=2, offset=0, order="newest")
+    p2, _ = store.list(limit=2, offset=2, order="newest")
+
+    assert [m.id for m in p1] == [m3.id, m2.id]
+    assert [m.id for m in p2] == [m1.id]
+
+
+def test_list_tag_and_pagination_combination(store):
+    m1 = store.add("work 1", tags=["work"])
+    m2 = store.add("work 2", tags=["work"])
+    store.add("work 3", tags=["work"])
+    store.add("home 1", tags=["home"])
+
+    memories, total = store.list(tags=["work"], limit=2, offset=1)
+
+    assert total == 3
+    assert [m.id for m in memories] == [m2.id, m1.id]
+
+
+def test_list_invalid_inputs(store):
+    with pytest.raises(ValueError, match="limit"):
+        store.list(limit=0)
+
+    with pytest.raises(ValueError, match="offset"):
+        store.list(offset=-1)
+
+    with pytest.raises(ValueError, match="order"):
+        store.list(order="invalid")
+
+
+def test_list_does_not_invoke_embedder():
+    class TrackingEmbedder(StubEmbedder):
+        called = False
+
+        def embed(self, texts: Sequence[str]) -> list[list[float]]:
+            TrackingEmbedder.called = True
+            return super().embed(texts)
+
+    with MemoryStore(db_path=":memory:", embedder=TrackingEmbedder()) as s:
+        s.add("stored note")
+        TrackingEmbedder.called = False
+
+        s.list()
+        assert TrackingEmbedder.called is False
+
+
+def test_list_tag_wildcard_escaping(store):
+    store.add("ci_cd memory", tags=["ci_cd"])
+    store.add("ci-cd memory", tags=["ci-cd"])
+    store.add("python memory", tags=["python"])
+
+    res_underscore, total_underscore = store.list(tags=["ci_cd"])
+    assert total_underscore == 1
+    assert [m.content for m in res_underscore] == ["ci_cd memory"]
+
+    res_dash, total_dash = store.list(tags=["ci-cd"])
+    assert total_dash == 1
+    assert [m.content for m in res_dash] == ["ci-cd memory"]
+
+
+def test_list_tag_percent_wildcard_escaping(store):
+    store.add("percent memory", tags=["100%"])
+    store.add("xyz memory", tags=["100xyz"])
+
+    res, total = store.list(tags=["100%"])
+    assert total == 1
+    assert [m.content for m in res] == ["percent memory"]
+
+
+def test_recent_ordering_preserves_insertion_id_order(store):
+    mem_a = store.add("memory A", created_at="2026-08-15T12:00:00Z")
+    mem_b = store.add("memory B", created_at="2020-01-01T00:00:00Z")
+
+    recent = store.recent()
+    assert [m.id for m in recent[:2]] == [mem_b.id, mem_a.id]
+
+    listed, _ = store.list(order="newest")
+    assert [m.id for m in listed[:2]] == [mem_a.id, mem_b.id]
+
+
+def test_concurrent_reads_and_writes_do_not_raise_or_corrupt(store):
+    """Every read method is exercised from other threads while one thread
+    keeps writing, so a read racing a write (a real MCP scenario once HTTP
+    transport serves multiple concurrent callers) can neither raise nor
+    observe a row half-written by another statement in the same call."""
+    import threading
+
+    store.add("baseline memory", tags=["seed"])
+    stop = threading.Event()
+    errors: list[BaseException] = []
+
+    def writer() -> None:
+        i = 0
+        while not stop.is_set():
+            store.add(f"memory {i}", tags=["concurrent"])
+            i += 1
+
+    def reader() -> None:
+        while not stop.is_set():
+            try:
+                store.search("memory", limit=5)
+                store.get(1)
+                store.count()
+                store.contains("baseline memory")
+                store.list(limit=5)
+                list(store.export_records())
+                store.matching(tags=["concurrent"])
+            except BaseException as exc:  # noqa: BLE001 - captured, not swallowed
+                errors.append(exc)
+                stop.set()
+
+    threads = [threading.Thread(target=writer)]
+    threads += [threading.Thread(target=reader) for _ in range(4)]
+    for t in threads:
+        t.start()
+    stop.wait(0.5)
+    stop.set()
+    for t in threads:
+        t.join(timeout=5)
+
+    assert errors == []
+    assert store.count() >= 1
