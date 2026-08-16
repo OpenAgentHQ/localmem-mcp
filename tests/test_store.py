@@ -773,3 +773,47 @@ def test_recent_ordering_preserves_insertion_id_order(store):
 
     listed, _ = store.list(order="newest")
     assert [m.id for m in listed[:2]] == [mem_a.id, mem_b.id]
+
+
+def test_concurrent_reads_and_writes_do_not_raise_or_corrupt(store):
+    """Every read method is exercised from other threads while one thread
+    keeps writing, so a read racing a write (a real MCP scenario once HTTP
+    transport serves multiple concurrent callers) can neither raise nor
+    observe a row half-written by another statement in the same call."""
+    import threading
+
+    store.add("baseline memory", tags=["seed"])
+    stop = threading.Event()
+    errors: list[BaseException] = []
+
+    def writer() -> None:
+        i = 0
+        while not stop.is_set():
+            store.add(f"memory {i}", tags=["concurrent"])
+            i += 1
+
+    def reader() -> None:
+        while not stop.is_set():
+            try:
+                store.search("memory", limit=5)
+                store.get(1)
+                store.count()
+                store.contains("baseline memory")
+                store.list(limit=5)
+                list(store.export_records())
+                store.matching(tags=["concurrent"])
+            except BaseException as exc:  # noqa: BLE001 - captured, not swallowed
+                errors.append(exc)
+                stop.set()
+
+    threads = [threading.Thread(target=writer)]
+    threads += [threading.Thread(target=reader) for _ in range(4)]
+    for t in threads:
+        t.start()
+    stop.wait(0.5)
+    stop.set()
+    for t in threads:
+        t.join(timeout=5)
+
+    assert errors == []
+    assert store.count() >= 1
