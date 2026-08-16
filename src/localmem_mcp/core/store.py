@@ -176,9 +176,10 @@ class MemoryStore:
         this to show what ``forget --tag stale`` would remove before asking.
         """
         where, params = _bulk_filters(tags, older_than_days)
-        rows = self._conn.execute(
-            f"SELECT * FROM memories WHERE {where} ORDER BY id DESC", params
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                f"SELECT * FROM memories WHERE {where} ORDER BY id DESC", params
+            ).fetchall()
         return [_row_to_memory(row) for row in rows]
 
     def delete_many(
@@ -202,7 +203,10 @@ class MemoryStore:
 
     def get(self, memory_id: int) -> Memory | None:
         """Fetch one memory by id, or None if there's no such memory."""
-        row = self._conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM memories WHERE id = ?", (memory_id,)
+            ).fetchone()
         return _row_to_memory(row) if row else None
 
     def list(
@@ -284,12 +288,15 @@ class MemoryStore:
             return []
 
         tag_list = _normalize_tags(tags)
-        rows = self._conn.execute("SELECT * FROM memories").fetchall()
-        if not rows:
-            return []
-
+        # Computed before the lock, like add()/update() do — embedding is the
+        # slow part, and it doesn't touch the connection.
         query_vector = self.embedder.embed([query])[0]
-        keyword_hits = self._keyword_hits(query)
+
+        with self._lock:
+            rows = self._conn.execute("SELECT * FROM memories").fetchall()
+            if not rows:
+                return []
+            keyword_hits = self._keyword_hits(query)
 
         results: _list[SearchResult] = []
         for row in rows:
@@ -310,7 +317,11 @@ class MemoryStore:
         return results[start : start + max(1, limit)]
 
     def _keyword_hits(self, query: str) -> dict[int, float]:
-        """Map memory id -> keyword score in [0, 1] using FTS5 bm25 ranking."""
+        """Map memory id -> keyword score in [0, 1] using FTS5 bm25 ranking.
+
+        Callers must already hold ``self._lock``; this method doesn't acquire
+        it itself.
+        """
         match = _fts_query(query)
         if not match:
             return {}
@@ -343,9 +354,10 @@ class MemoryStore:
         content = (content or "").strip()
         if not content:
             return False
-        row = self._conn.execute(
-            "SELECT 1 FROM memories WHERE content = ? LIMIT 1", (content,)
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT 1 FROM memories WHERE content = ? LIMIT 1", (content,)
+            ).fetchone()
         return row is not None
 
     def export_records(
@@ -364,12 +376,13 @@ class MemoryStore:
         an export is to be portable. When included, each record also carries
         ``embedding_model`` and ``dim`` so a reader can tell what produced it.
 
-        Rows are streamed rather than materialised, so exporting a large store
-        doesn't build the whole file in memory first.
+        Rows are fetched under the store's lock so a concurrent write can't
+        produce a torn read, then yielded one at a time.
         """
         tag_list = _normalize_tags(tags)
-        cursor = self._conn.execute("SELECT * FROM memories ORDER BY id")
-        for row in cursor:
+        with self._lock:
+            rows = self._conn.execute("SELECT * FROM memories ORDER BY id").fetchall()
+        for row in rows:
             memory = _row_to_memory(row)
             if tag_list and not _has_tags(memory, tag_list):
                 continue
@@ -382,7 +395,8 @@ class MemoryStore:
 
     def count(self) -> int:
         """Total number of stored memories."""
-        return int(self._conn.execute("SELECT COUNT(*) FROM memories").fetchone()[0])
+        with self._lock:
+            return int(self._conn.execute("SELECT COUNT(*) FROM memories").fetchone()[0])
 
     def stats(self) -> dict[str, Any]:
         """Database location, memory count, and the embedding model in use."""
