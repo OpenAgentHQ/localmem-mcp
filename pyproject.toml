@@ -73,6 +73,7 @@ include = ["src/localmem_mcp", "tests", "README.md", "LICENSE"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "--cov=localmem_mcp --cov-report=term-missing"
 
 [tool.coverage.report]
 fail_under = 90
