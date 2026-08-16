@@ -99,6 +99,56 @@ In `~/.codeium/windsurf/mcp_config.json`:
 }
 ```
 
+## Visual Studio Code (MCP support)
+
+VS Code uses an `mcp.json` file for Model Context Protocol configuration.
+
+Edit your global user configuration or a project-specific workspace configuration:
+
+- **macOS** — `~/Library/Application Support/Code/User/mcp.json`
+- **Linux** — `~/.config/Code/User/mcp.json`
+- **Windows** — `%APPDATA%\Code\User\mcp.json`
+- **Workspace** — `.vscode/mcp.json` (inside your project root)
+
+You can also open these files directly in VS Code using the Command Palette (`Ctrl+Shift+P` on Linux/Windows or `Cmd+Shift+P` on macOS) by selecting **MCP: Open User Configuration** or **MCP: Open Workspace Folder MCP Configuration**.
+
+```json
+{
+  "servers": {
+    "localmem": {
+      "command": "uvx",
+      "args": ["localmem-mcp"]
+    }
+  }
+}
+```
+
+!!! note "Root key difference"
+
+    VS Code expects `"servers"` as its root key in `mcp.json`, whereas clients like Claude Desktop or Cursor use `"mcpServers"`.
+
+!!! warning "VS Code PATH gotcha"
+
+    VS Code launched from a desktop launcher or GUI shortcut often does not inherit your shell's environment variables or custom `PATH`. If `uvx` is not found or fails silently, specify the absolute path to `uvx` (find it with `which uvx`, e.g. `/usr/local/bin/uvx` or `~/.local/bin/uvx`):
+
+    ```json
+    {
+      "servers": {
+        "localmem": {
+          "command": "/home/you/.local/bin/uvx",
+          "args": ["localmem-mcp"]
+        }
+      }
+    }
+    ```
+
+    Alternatively, install via `pip install localmem-mcp` and set `"command"` to the absolute path of the `localmem-mcp` executable (e.g. `/home/you/.venv/bin/localmem-mcp`).
+
+To verify it connected:
+
+1. Open the Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`) and run **MCP: List Servers** to view active server status.
+2. In VS Code Chat, check the tools indicator to confirm `localmem` tools (`store_memory`, `search_memory`, etc.) are listed and active.
+
 ## Any other MCP client
 
 The server runs over stdio with no arguments:
