@@ -247,6 +247,40 @@ async def test_forget_memories_unfiltered_raises(mcp_server):
     assert server.get_store().count() == 1  # nothing was wiped
 
 
+async def test_store_memory_empty_content_raises_actionable_tool_error(mcp_server):
+    async with Client(mcp_server) as client:
+        with pytest.raises(ToolError, match="content must not be empty"):
+            await client.call_tool("store_memory", {"content": "   "})
+
+
+async def test_update_memory_invalid_call_raises_actionable_tool_error(mcp_server):
+    async with Client(mcp_server) as client:
+        stored = await client.call_tool("store_memory", {"content": "a note"})
+
+        with pytest.raises(ToolError, match="nothing to update"):
+            await client.call_tool("update_memory", {"memory_id": stored.data["id"]})
+
+
+async def test_infra_failure_is_masked_and_logged_to_stderr(mcp_server, monkeypatch, capsys):
+    store = server.get_store()
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("disk on fire, /secret/internal/path unreadable")
+
+    monkeypatch.setattr(store, "add", _boom)
+
+    async with Client(mcp_server) as client:
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool("store_memory", {"content": "a note"})
+
+    message = str(exc_info.value)
+    assert "disk on fire" not in message
+    assert "/secret/internal/path" not in message
+
+    captured = capsys.readouterr()
+    assert captured.out == ""  # never stdout - it would corrupt stdio JSON-RPC
+
+
 async def test_list_memories_tool(mcp_server):
     async with Client(mcp_server) as client:
         await client.call_tool("store_memory", {"content": "work note 1", "tags": ["work"]})
