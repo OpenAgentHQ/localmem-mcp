@@ -68,6 +68,41 @@ def handle_recall(store: MemoryStore, args: argparse.Namespace, as_json: bool) -
     return 0
 
 
+def handle_list(store: MemoryStore, args: argparse.Namespace, as_json: bool) -> int:
+    """List memories with tag filtering, ordering, and pagination."""
+    try:
+        memories, total = store.list(
+            tags=args.tags,
+            limit=args.limit,
+            offset=args.offset,
+            order=args.order,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    payload = {
+        "count": len(memories),
+        "total": total,
+        "offset": args.offset,
+        "limit": args.limit,
+        "order": args.order,
+        "tags": args.tags,
+        "memories": [m.to_dict() for m in memories],
+    }
+
+    def render() -> None:
+        if not memories:
+            print("no memories found")
+            return
+        for memory in memories:
+            tags = f" [{', '.join(memory.tags)}]" if memory.tags else ""
+            print(f"#{memory.id} ({memory.created_at}){tags} {memory.content}")
+
+    _print(payload, as_json, render)
+    return 0
+
+
 def handle_forget(store: MemoryStore, args: argparse.Namespace, as_json: bool) -> int:
     """Delete a memory by id, or bulk-delete by tag and/or age."""
     if args.memory_id is not None:
@@ -129,9 +164,7 @@ def handle_export(store: MemoryStore, args: argparse.Namespace, as_json: bool) -
     already machine-readable, and a single JSON array would defeat the point of
     a format you can stream and append to.
     """
-    for record in store.export_records(
-        tags=args.tags, with_embeddings=args.with_embeddings
-    ):
+    for record in store.export_records(tags=args.tags, with_embeddings=args.with_embeddings):
         # No indent, no sorting: one compact line per memory is what makes the
         # file streamable and diff-friendly.
         print(json.dumps(record, ensure_ascii=False))

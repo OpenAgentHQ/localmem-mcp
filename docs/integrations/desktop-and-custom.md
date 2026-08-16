@@ -87,7 +87,7 @@ You don't need an MCP client at all. The server is a thin shell over a
 ```python
 from localmem_mcp import MemoryStore
 
-with MemoryStore() as store:                     # ~/.localmem/memories.db
+with MemoryStore() as store:  # ~/.localmem/memories.db
     store.add("Deploys go out on Thursdays", tags=["ops"])
 
     for hit in store.search("when do we ship?"):
@@ -116,6 +116,7 @@ from localmem_mcp import MemoryStore
 
 mcp = FastMCP("my-agent-tools")
 store = MemoryStore()
+
 
 @mcp.tool
 def remember(content: str, tags: list[str] | None = None) -> int:

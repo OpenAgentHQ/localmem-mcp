@@ -46,8 +46,8 @@ memory = store.add(
     metadata={"confidence": 0.9, "person": "Priya"},
 )
 
-memory.id          # 7
-memory.tags        # ["team", "preference"] — normalized
+memory.id  # 7
+memory.tags  # ["team", "preference"] — normalized
 memory.created_at  # "2026-08-14T11:31:00+00:00"
 ```
 
@@ -67,9 +67,9 @@ Empty content raises `ValueError`.
 results = store.search(
     query="deployment schedule",
     limit=10,
-    tags=["ops"],       # must carry ALL of these
+    tags=["ops"],  # must carry ALL of these
     min_score=0.3,
-    offset=0,           # skip this many ranked results
+    offset=0,  # skip this many ranked results
 )
 
 for result in results:
@@ -96,19 +96,24 @@ offsets are clamped to `0`, and an offset past the end returns `[]`.
 ## Reading, updating, and deleting
 
 ```python
-memory = store.get(7)              # Memory | None
-recent = store.recent(limit=10)    # newest first
+memory = store.get(7)  # Memory | None
+memories, total = store.list(
+    tags=["ops"], limit=20, offset=0, order="newest"
+)  # tuple[list[Memory], int]
+recent = store.recent(limit=10)  # newest first
 recent = store.recent(limit=10, tags=["ops"])
 
 updated = store.update(7, content="Priya prefers written updates over standups")
 store.update(7, tags=["team", "preference"])  # omit content to skip re-embedding
-store.delete(7)                    # True if it existed
-removed = store.delete_many(tags=["scratch"])        # int — count removed
+store.delete(7)  # True if it existed
+removed = store.delete_many(tags=["scratch"])  # int — count removed
 removed = store.delete_many(older_than_days=90)
-preview = store.matching(tags=["stale"])             # list[Memory] — what a bulk delete would remove
-store.count()                      # int
-store.stats()                      # {"db_path": …, "memories": …, "embedding_model": …}
+preview = store.matching(tags=["stale"])  # list[Memory] — what a bulk delete would remove
+store.count()  # int
+store.stats()  # {"db_path": …, "memories": …, "embedding_model": …}
 ```
+
+`list()` enumerates stored memories with tag filtering, ordering (`"newest"` or `"oldest"`), and pagination (`limit`, `offset`). It performs query construction and tag filtering directly in SQL without invoking embedding models or semantic search, returning a `(memories, total_count)` tuple.
 
 `update()` corrects a memory in place. Only the fields you pass are changed —
 omitting `content` leaves the embedding alone, so retagging is instant. Changing
@@ -182,11 +187,13 @@ With no `db_path`, the same resolution order as everything else applies:
 ```python
 from localmem_mcp import MemoryStore
 
+
 class MyEmbedder:
     name = "my-embedder"
 
     def embed(self, texts):
         return [my_model.encode(t) for t in texts]
+
 
 store = MemoryStore(db_path="./custom.db", embedder=MyEmbedder())
 ```

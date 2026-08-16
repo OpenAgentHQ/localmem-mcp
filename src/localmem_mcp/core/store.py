@@ -7,6 +7,7 @@ fastembed performs on first use.
 
 from __future__ import annotations
 
+from builtins import list as _list
 import json
 import sqlite3
 import threading
@@ -20,6 +21,7 @@ from .schema import _SCHEMA
 from .search import KEYWORD_WEIGHT, _cosine, _fts_query
 from .utils import (
     _bulk_filters,
+    _escape_like,
     _has_tags,
     _normalize_tags,
     _now,
@@ -96,8 +98,9 @@ class MemoryStore:
                     len(vector),
                 ),
             )
+        assert cursor.lastrowid is not None
         return Memory(
-            id=int(cursor.lastrowid),
+            id=cursor.lastrowid,
             content=content,
             tags=tag_list,
             source=source,
@@ -120,8 +123,8 @@ class MemoryStore:
         leaves the vector alone. ``created_at`` is preserved and ``updated_at``
         refreshed. The FTS5 index stays in sync via the AFTER UPDATE trigger.
         """
-        sets: list[str] = []
-        params: list[Any] = []
+        sets: _list[str] = []
+        params: _list[Any] = []
 
         if content is not None:
             content = content.strip()
@@ -153,24 +156,20 @@ class MemoryStore:
             )
             if cursor.rowcount == 0:
                 return None
-            row = self._conn.execute(
-                "SELECT * FROM memories WHERE id = ?", (memory_id,)
-            ).fetchone()
+            row = self._conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
         return _row_to_memory(row)
 
     def delete(self, memory_id: int) -> bool:
         """Delete a memory. Returns True if it existed, False if it didn't."""
         with self._lock, self._conn:
-            cursor = self._conn.execute(
-                "DELETE FROM memories WHERE id = ?", (memory_id,)
-            )
+            cursor = self._conn.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
         return cursor.rowcount > 0
 
     def matching(
         self,
         tags: Iterable[str] | str | None = None,
         older_than_days: int | None = None,
-    ) -> list[Memory]:
+    ) -> _list[Memory]:
         """Memories a bulk delete would remove, newest first.
 
         Same filters as :meth:`delete_many`, without deleting — the CLI uses
@@ -196,33 +195,69 @@ class MemoryStore:
         """
         where, params = _bulk_filters(tags, older_than_days)
         with self._lock, self._conn:
-            cursor = self._conn.execute(
-                f"DELETE FROM memories WHERE {where}", params
-            )
+            cursor = self._conn.execute(f"DELETE FROM memories WHERE {where}", params)
         return cursor.rowcount
 
     # -- reads ----------------------------------------------------------
 
     def get(self, memory_id: int) -> Memory | None:
         """Fetch one memory by id, or None if there's no such memory."""
-        row = self._conn.execute(
-            "SELECT * FROM memories WHERE id = ?", (memory_id,)
-        ).fetchone()
+        row = self._conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
         return _row_to_memory(row) if row else None
 
-    def recent(
-        self, limit: int = 10, tags: Iterable[str] | str | None = None
-    ) -> list[Memory]:
-        """Most recently stored memories, newest first."""
+    def list(
+        self,
+        tags: Iterable[str] | str | None = None,
+        limit: int = 20,
+        offset: int = 0,
+        order: str = "newest",
+    ) -> tuple[_list[Memory], int]:
+        """List stored memories with tag filtering, ordering, and pagination.
+
+        Returns ``(memories, total_count)`` where ``total_count`` is the total
+        number of stored memories matching all specified tags, regardless of
+        ``limit`` and ``offset``.
+        """
         tag_list = _normalize_tags(tags)
-        rows = self._conn.execute(
-            "SELECT * FROM memories ORDER BY id DESC LIMIT ?",
-            (max(1, limit) * (10 if tag_list else 1),),
-        ).fetchall()
+        order_clean = (order or "").strip().lower()
+        if order_clean not in ("newest", "oldest", "id_desc"):
+            raise ValueError(f"invalid order {order!r}: must be 'newest' or 'oldest'")
+        if limit <= 0:
+            raise ValueError("limit must be greater than 0")
+        if offset < 0:
+            raise ValueError("offset must be non-negative")
+
+        clauses: _list[str] = []
+        params: _list[Any] = []
+        for tag in tag_list:
+            clauses.append("(',' || tags || ',') LIKE ? ESCAPE '\\'")
+            params.append(f"%,{_escape_like(tag)},%")
+
+        where_sql = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+
+        if order_clean == "newest":
+            order_sql = "ORDER BY created_at DESC, id DESC"
+        elif order_clean == "oldest":
+            order_sql = "ORDER BY created_at ASC, id ASC"
+        else:
+            order_sql = "ORDER BY id DESC"
+
+        with self._lock:
+            count_row = self._conn.execute(
+                f"SELECT COUNT(*) FROM memories{where_sql}", params
+            ).fetchone()
+            total = int(count_row[0]) if count_row else 0
+
+            query = f"SELECT * FROM memories{where_sql} {order_sql} LIMIT ? OFFSET ?"
+            rows = self._conn.execute(query, params + [limit, offset]).fetchall()
+
         memories = [_row_to_memory(row) for row in rows]
-        if tag_list:
-            memories = [m for m in memories if _has_tags(m, tag_list)]
-        return memories[:limit]
+        return memories, total
+
+    def recent(self, limit: int = 10, tags: Iterable[str] | str | None = None) -> _list[Memory]:
+        """Most recently stored memories, newest first."""
+        memories, _ = self.list(tags=tags, limit=max(1, limit), offset=0, order="id_desc")
+        return memories
 
     def search(
         self,
@@ -231,7 +266,7 @@ class MemoryStore:
         tags: Iterable[str] | str | None = None,
         min_score: float = 0.0,
         offset: int = 0,
-    ) -> list[SearchResult]:
+    ) -> _list[SearchResult]:
         """Semantic search, nudged by exact keyword matches.
 
         Every stored memory is scored by cosine similarity against the query
@@ -256,15 +291,13 @@ class MemoryStore:
         query_vector = self.embedder.embed([query])[0]
         keyword_hits = self._keyword_hits(query)
 
-        results: list[SearchResult] = []
+        results: _list[SearchResult] = []
         for row in rows:
             memory = _row_to_memory(row)
             if tag_list and not _has_tags(memory, tag_list):
                 continue
             similarity = (
-                _cosine(query_vector, _unpack(row["embedding"]))
-                if row["embedding"]
-                else 0.0
+                _cosine(query_vector, _unpack(row["embedding"])) if row["embedding"] else 0.0
             )
             # Keyword matching is additive on top of cosine so scores stay on
             # the familiar 0-1 similarity scale that `min_score` filters on.

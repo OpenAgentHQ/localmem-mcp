@@ -39,9 +39,7 @@ class FastEmbedEmbedder:
                 if self._model is None:
                     from fastembed import TextEmbedding
 
-                    self._model = TextEmbedding(
-                        model_name=self.name, cache_dir=self._cache_dir
-                    )
+                    self._model = TextEmbedding(model_name=self.name, cache_dir=self._cache_dir)
         return self._model
 
     def embed(self, texts: Sequence[str]) -> list[list[float]]:

@@ -157,8 +157,7 @@ def make_corpus(size: int, queries: int, seed: int) -> Corpus:
     # Queries reuse the corpus vocabulary so keyword hits and cosine both fire —
     # a query that matches nothing would skip work a real query does.
     query_list = [
-        " ".join(rng.choice(WORDS) for _ in range(rng.randint(3, 8)))
-        for _ in range(queries)
+        " ".join(rng.choice(WORDS) for _ in range(rng.randint(3, 8))) for _ in range(queries)
     ]
     return Corpus(contents=contents, tags=tags, queries=query_list)
 
@@ -329,9 +328,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--limit", type=int, default=5, help="results per search")
     parser.add_argument("--seed", type=int, default=1234, help="corpus seed")
-    parser.add_argument(
-        "--dim", type=int, default=DEFAULT_DIM, help="stub embedder dimensions"
-    )
+    parser.add_argument("--dim", type=int, default=DEFAULT_DIM, help="stub embedder dimensions")
     parser.add_argument(
         "--real",
         action="store_true",

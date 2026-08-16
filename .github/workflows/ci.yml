@@ -30,6 +30,23 @@ jobs:
       - name: ruff check
         run: ruff check --output-format=github .
 
+  type-check:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      - name: mypy
+        run: mypy --strict src/localmem_mcp
+
   test:
     name: Test ${{ matrix.python-version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -61,7 +78,7 @@ jobs:
         run: python -m pip install -e ".[dev]"
 
       - name: Run tests
-        run: python -m pytest -q
+        run: python -m pytest -q --cov=localmem_mcp --cov-report=term-missing
 
       - name: Smoke-test the installed CLI
         shell: bash
@@ -99,7 +116,7 @@ jobs:
       - name: Run the full suite against real embeddings
         env:
           LOCALMEM_TEST_FASTEMBED: "1"
-        run: python -m pytest -q
+        run: python -m pytest -q --cov=localmem_mcp --cov-report=term-missing
 
       - name: End-to-end CLI check
         run: |
