@@ -93,6 +93,27 @@ jobs:
           grep -q "smoke.db" out2.txt
           localmem-mcp --db "${RUNNER_TEMP}/smoke.db" recall
 
+  no-network:
+    name: No network calls
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      # Not just "the suite passes" - this is the specific test that blocks
+      # every outbound socket connection and proves the store's full
+      # read/write/search surface works with egress cut off. See
+      # tests/test_no_network.py and SECURITY.md.
+      - name: Run the egress-blocked test
+        run: python -m pytest -q tests/test_no_network.py -v
+
   integration:
     name: Real embeddings (fastembed)
     runs-on: ubuntu-latest
