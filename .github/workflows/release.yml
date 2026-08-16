@@ -59,6 +59,10 @@ jobs:
     name: Build distributions
     needs: resolve
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required to mint the Sigstore signing certificate
+      attestations: write # required to publish the provenance attestation
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -76,6 +80,15 @@ jobs:
         run: |
           python -m pip install --upgrade twine
           python -m twine check dist/*
+
+      # Signs dist/* with Sigstore and publishes a build provenance
+      # attestation tying these exact artifacts back to this workflow run and
+      # commit - verifiable with `gh attestation verify dist/<file> --repo
+      # OpenAgentHQ/localmem-mcp` by anyone, not just something we assert.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: "dist/*"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:

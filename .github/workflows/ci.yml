@@ -111,8 +111,14 @@ jobs:
       # every outbound socket connection and proves the store's full
       # read/write/search surface works with egress cut off. See
       # tests/test_no_network.py and SECURITY.md.
+      #
+      # --no-cov: pytest's addopts (pyproject.toml) enable coverage with a
+      # 90% gate on every invocation, but this job intentionally runs two
+      # tests out of the whole suite - a coverage gate would fail here no
+      # matter how well those two tests pass. Coverage is already enforced
+      # by the `test` job, which runs the full suite.
       - name: Run the egress-blocked test
-        run: python -m pytest -q tests/test_no_network.py -v
+        run: python -m pytest -q tests/test_no_network.py -v --no-cov
 
   integration:
     name: Real embeddings (fastembed)
