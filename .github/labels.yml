@@ -31,6 +31,14 @@
   color: "008672"
   description: Extra attention is needed
 
+- name: in-progress
+  color: fbca04
+  description: Someone is actively working on this issue
+
+- name: first contribution
+  color: 7057ff
+  description: The contributor's first merged PR
+
 - name: needs discussion
   color: fef2c0
   description: Direction isn't settled — comment before building
