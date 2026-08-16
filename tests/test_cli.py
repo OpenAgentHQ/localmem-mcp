@@ -123,12 +123,22 @@ def test_json_output_is_parseable(tmp_path, capsys):
     assert payload["db_path"] == str(db)
 
 
-def test_recall_missing_id_exits_nonzero(tmp_path, capsys):
+def test_recall_missing_id_closes_store(tmp_path, capsys, monkeypatch):
     db = tmp_path / "cli.db"
+    closed = []
+
+    original_close = MemoryStore.close
+
+    def tracking_close(store):
+        closed.append(True)
+        original_close(store)
+
+    monkeypatch.setattr(MemoryStore, "close", tracking_close)
 
     assert main(["--db", str(db), "recall", "999"]) == 1
 
     assert "no memory with id 999" in capsys.readouterr().err
+    assert closed == [True]
 
 
 # -- forget ----------------------------------------------------------------
