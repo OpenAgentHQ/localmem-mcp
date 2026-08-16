@@ -92,7 +92,8 @@ flowchart LR
     R --> B[build job]
     B --> C[python -m build]
     C --> D[twine check]
-    D --> E[upload artifact]
+    D --> P[attest-build-provenance<br/>Sigstore]
+    P --> E[upload artifact]
     E --> F[publish job]
     F --> H[pypa/gh-action-pypi-publish<br/>OIDC, no secrets]
     H --> I[(PyPI)]
@@ -102,9 +103,19 @@ flowchart LR
 
 The split into jobs is deliberate. `resolve` fails fast if the tag and
 `pyproject.toml` disagree. Metadata problems fail at `twine check`, before
-anything is uploadable. The publish job is the only one with `id-token: write`
-and is scoped to the `pypi` environment; only `github-release` gets
-`contents: write`.
+anything is uploadable. `build` also holds `id-token: write` (alongside
+`publish`) so it can sign the built `dist/*` with Sigstore and publish a build
+provenance attestation — proof, verifiable by anyone, that these exact
+artifacts came from this repository's `release.yml` at this commit, not just
+an assertion in a README. Verify one with:
+
+```bash
+gh attestation verify dist/localmem_mcp-0.1.0-py3-none-any.whl \
+  --repo OpenAgentHQ/localmem-mcp
+```
+
+The publish job is the only one scoped to the `pypi` environment; only
+`github-release` gets `contents: write`.
 
 **Re-runs are safe.** Publishing uses `skip-existing`, so a version already on
 PyPI doesn't fail the run — which matters, because the GitHub Release job still
