@@ -11,8 +11,17 @@ releases are cut.
 
 ### Added
 
+**MCP server**
+
+- `list_memories` — enumerate memories with tag filtering, ordering (`newest` or
+  `oldest`), and pagination (`limit`, `offset`) without requiring a search query.
+  Performs filtering directly in SQL without calling embedding models. Returns
+  matching memories alongside total count.
+
 **CLI**
 
+- `list` — browse memories from the terminal with `--tag`, `--limit`, `--offset`,
+  and `--order` flags. Supports `--json` output.
 - `export` — write memories to stdout as JSONL, one object per line, oldest
   first. `--tag` filters conjunctively. Embeddings are excluded by default,
   since a vector only means something on a machine running the same model;
@@ -29,6 +38,8 @@ releases are cut.
 
 **Python library**
 
+- `MemoryStore.list()` — list stored memories with tag filtering, ordering, and
+  pagination. Returns `(memories, total_count)`.
 - `MemoryStore.export_records()` — stream every memory as a plain dict, with the
   same tag filter and optional embeddings as the CLI.
 - `import_records()` — read an iterable of JSONL lines into a store, returning

@@ -18,9 +18,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
           cache: pip
@@ -29,6 +29,23 @@ jobs:
 
       - name: ruff check
         run: ruff check --output-format=github .
+
+  type-check:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      - name: mypy
+        run: mypy --strict src/localmem_mcp
 
   test:
     name: Test ${{ matrix.python-version }} on ${{ matrix.os }}
@@ -50,9 +67,9 @@ jobs:
           - os: windows-latest
             python-version: "3.12"
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -61,7 +78,7 @@ jobs:
         run: python -m pip install -e ".[dev]"
 
       - name: Run tests
-        run: python -m pytest -q
+        run: python -m pytest -q --cov=localmem_mcp --cov-report=term-missing
 
       - name: Smoke-test the installed CLI
         shell: bash
@@ -76,8 +93,8 @@ jobs:
           grep -q "smoke.db" out2.txt
           localmem-mcp --db "${RUNNER_TEMP}/smoke.db" recall
 
-  integration:
-    name: Real embeddings (fastembed)
+  no-network:
+    name: No network calls
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -87,8 +104,35 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      # Not just "the suite passes" - this is the specific test that blocks
+      # every outbound socket connection and proves the store's full
+      # read/write/search surface works with egress cut off. See
+      # tests/test_no_network.py and SECURITY.md.
+      #
+      # --no-cov: pytest's addopts (pyproject.toml) enable coverage with a
+      # 90% gate on every invocation, but this job intentionally runs two
+      # tests out of the whole suite - a coverage gate would fail here no
+      # matter how well those two tests pass. Coverage is already enforced
+      # by the `test` job, which runs the full suite.
+      - name: Run the egress-blocked test
+        run: python -m pytest -q tests/test_no_network.py -v --no-cov
+
+  integration:
+    name: Real embeddings (fastembed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
       - name: Cache the embedding model
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/fastembed
           key: fastembed-${{ runner.os }}-bge-small-en-v1.5
@@ -99,7 +143,7 @@ jobs:
       - name: Run the full suite against real embeddings
         env:
           LOCALMEM_TEST_FASTEMBED: "1"
-        run: python -m pytest -q
+        run: python -m pytest -q --cov=localmem_mcp --cov-report=term-missing
 
       - name: End-to-end CLI check
         run: |
@@ -108,13 +152,34 @@ jobs:
           localmem-mcp --db "${RUNNER_TEMP}/e2e.db" search "what database are we using?" | tee results.txt
           grep -q SQLite results.txt
 
+  pip-audit:
+    name: pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip setuptools
+          python -m pip install -e ".[dev]"
+
+      - name: Audit dependencies for known vulnerabilities
+        run: |
+          python -m pip install --upgrade pip-audit
+          pip-audit
+
   build:
     name: Build distributions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
           cache: pip

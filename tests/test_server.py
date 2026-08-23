@@ -34,6 +34,7 @@ async def test_tools_are_exposed(mcp_server):
         "store_memory",
         "search_memory",
         "recall_memory",
+        "list_memories",
         "update_memory",
         "forget_memory",
         "forget_memories",
@@ -86,9 +87,7 @@ async def test_search_memory_pages_with_offset(mcp_server):
         everything = await client.call_tool(
             "search_memory", {"query": "database storage", "limit": 4}
         )
-        first = await client.call_tool(
-            "search_memory", {"query": "database storage", "limit": 2}
-        )
+        first = await client.call_tool("search_memory", {"query": "database storage", "limit": 2})
         second = await client.call_tool(
             "search_memory", {"query": "database storage", "limit": 2, "offset": 2}
         )
@@ -97,9 +96,7 @@ async def test_search_memory_pages_with_offset(mcp_server):
         )
 
     all_ids = [r["id"] for r in everything.data["results"]]
-    paged_ids = [r["id"] for r in first.data["results"]] + [
-        r["id"] for r in second.data["results"]
-    ]
+    paged_ids = [r["id"] for r in first.data["results"]] + [r["id"] for r in second.data["results"]]
 
     assert paged_ids == all_ids
     assert first.data["offset"] == 0
@@ -133,9 +130,7 @@ async def test_update_memory_corrects_in_place(mcp_server):
         assert updated.data["memory"]["content"] == "We chose sqlite as the database"
         assert updated.data["memory"]["created_at"] == created_at
 
-        found = await client.call_tool(
-            "search_memory", {"query": "which database did we pick?"}
-        )
+        found = await client.call_tool("search_memory", {"query": "which database did we pick?"})
         assert found.data["results"][0]["id"] == memory_id
 
 
@@ -146,9 +141,7 @@ async def test_update_memory_tag_only_leaves_content(mcp_server):
         )
         memory_id = stored.data["id"]
 
-        updated = await client.call_tool(
-            "update_memory", {"memory_id": memory_id, "tags": ["new"]}
-        )
+        updated = await client.call_tool("update_memory", {"memory_id": memory_id, "tags": ["new"]})
 
         assert updated.data["found"] is True
         assert updated.data["memory"]["content"] == "python typing note"
@@ -157,9 +150,7 @@ async def test_update_memory_tag_only_leaves_content(mcp_server):
 
 async def test_update_memory_missing_id_reports_not_found(mcp_server):
     async with Client(mcp_server) as client:
-        result = await client.call_tool(
-            "update_memory", {"memory_id": 9999, "content": "anything"}
-        )
+        result = await client.call_tool("update_memory", {"memory_id": 9999, "content": "anything"})
 
     assert result.data["found"] is False
     assert result.data["memory_id"] == 9999
@@ -218,12 +209,8 @@ async def test_forget_memory_missing_id_reports_not_found(mcp_server):
 
 async def test_forget_memories_by_tag(mcp_server):
     async with Client(mcp_server) as client:
-        await client.call_tool(
-            "store_memory", {"content": "stale fact", "tags": ["stale"]}
-        )
-        await client.call_tool(
-            "store_memory", {"content": "current fact", "tags": ["current"]}
-        )
+        await client.call_tool("store_memory", {"content": "stale fact", "tags": ["stale"]})
+        await client.call_tool("store_memory", {"content": "current fact", "tags": ["current"]})
 
         result = await client.call_tool("forget_memories", {"tags": ["stale"]})
 
@@ -258,3 +245,56 @@ async def test_forget_memories_unfiltered_raises(mcp_server):
             await client.call_tool("forget_memories", {})
 
     assert server.get_store().count() == 1  # nothing was wiped
+
+
+async def test_store_memory_empty_content_raises_actionable_tool_error(mcp_server):
+    async with Client(mcp_server) as client:
+        with pytest.raises(ToolError, match="content must not be empty"):
+            await client.call_tool("store_memory", {"content": "   "})
+
+
+async def test_update_memory_invalid_call_raises_actionable_tool_error(mcp_server):
+    async with Client(mcp_server) as client:
+        stored = await client.call_tool("store_memory", {"content": "a note"})
+
+        with pytest.raises(ToolError, match="nothing to update"):
+            await client.call_tool("update_memory", {"memory_id": stored.data["id"]})
+
+
+async def test_infra_failure_is_masked_and_logged_to_stderr(mcp_server, monkeypatch, capsys):
+    store = server.get_store()
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("disk on fire, /secret/internal/path unreadable")
+
+    monkeypatch.setattr(store, "add", _boom)
+
+    async with Client(mcp_server) as client:
+        with pytest.raises(ToolError) as exc_info:
+            await client.call_tool("store_memory", {"content": "a note"})
+
+    message = str(exc_info.value)
+    assert "disk on fire" not in message
+    assert "/secret/internal/path" not in message
+
+    captured = capsys.readouterr()
+    assert captured.out == ""  # never stdout - it would corrupt stdio JSON-RPC
+
+
+async def test_list_memories_tool(mcp_server):
+    async with Client(mcp_server) as client:
+        await client.call_tool("store_memory", {"content": "work note 1", "tags": ["work"]})
+        await client.call_tool("store_memory", {"content": "work note 2", "tags": ["work"]})
+        await client.call_tool("store_memory", {"content": "personal note", "tags": ["personal"]})
+
+        res = await client.call_tool(
+            "list_memories", {"tags": ["work"], "limit": 1, "offset": 0, "order": "oldest"}
+        )
+
+        assert res.data["count"] == 1
+        assert res.data["total"] == 2
+        assert res.data["offset"] == 0
+        assert res.data["limit"] == 1
+        assert res.data["order"] == "oldest"
+        assert res.data["tags"] == ["work"]
+        assert res.data["memories"][0]["content"] == "work note 1"

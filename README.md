@@ -1,18 +1,16 @@
 <div align="center">
 
+# Just SQLite and local embeddings.
+
+
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/localmem-mcp?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/localmem-mcp) [![CI](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml) [![PyPI - Version](https://img.shields.io/pypi/v/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/) [![PyPI - Python Versions](https://img.shields.io/pypi/pyversions/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![MCP](https://img.shields.io/badge/MCP-server-blueviolet)](https://modelcontextprotocol.io) [![Docs](https://img.shields.io/badge/docs-openagenthq.github.io-5b4bc4)](https://openagenthq.github.io/localmem-mcp/)
+
+
+
+
 <img src="docs/assets/banner.svg" alt="localmem-mcp — give your AI agent a memory that never leaves your machine" width="880">
 
-[![CI](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAgentHQ/localmem-mcp/actions/workflows/ci.yml)
-[![PyPI - Version](https://img.shields.io/pypi/v/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
-[![PyPI - Python Versions](https://img.shields.io/pypi/pyversions/localmem-mcp.svg)](https://pypi.org/project/localmem-mcp/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![MCP](https://img.shields.io/badge/MCP-server-blueviolet)](https://modelcontextprotocol.io)
-[![Docs](https://img.shields.io/badge/docs-openagenthq.github.io-5b4bc4)](https://openagenthq.github.io/localmem-mcp/)
-[![Local-first](https://img.shields.io/badge/cloud%20calls-zero-brightgreen)](#privacy)
 
-Just SQLite and local embeddings.
-
-**[📖 Read the docs →](https://openagenthq.github.io/localmem-mcp/)**
 
 <img src="docs/assets/demo.gif" alt="Registering localmem with three different agents, storing a decision in one session, and recalling it from a different agent days later — with no network calls" width="820">
 
@@ -90,7 +88,7 @@ The MCP server is a thin shell over a store you can import directly:
 ```python
 from localmem_mcp import MemoryStore
 
-store = MemoryStore()                       # ~/.localmem/memories.db
+store = MemoryStore()  # ~/.localmem/memories.db
 store.add("We chose SQLite over Postgres", tags=["decision", "architecture"])
 
 for hit in store.search("what database are we using?"):
@@ -115,6 +113,31 @@ embeddings are computed on-device with [fastembed](https://github.com/qdrant/fas
 The only network request the package ever makes is the one-time download of the
 embedding model (~90 MB, from Hugging Face) on first use — after that it works
 fully offline. Delete `~/.localmem/memories.db` and the memory is gone.
+
+## Why localmem-mcp
+
+The privacy pitch is the headline, but the cost story matters just as much:
+recall never calls an LLM. `search_memory` is local cosine similarity plus an
+FTS5 keyword bonus, both computed on-device — no tokens spent, no round trip,
+no per-call bill, whether you store ten memories or ten thousand. Most memory
+tools in this space run an LLM on the way in *and* the way out; localmem-mcp
+only ever runs the embedding model, locally, and only on the way in.
+
+| | **localmem-mcp** | OpenMemory MCP (Mem0) | mem0-mcp-server | Zep / Graphiti |
+| --- | --- | --- | --- | --- |
+| Cloud calls | Zero, ever, after the one-time model download | Yes — LLM call to extract facts | Yes — hosted Mem0 platform | Yes — LLM call to build/update the graph |
+| API key required | None | `OPENAI_API_KEY` | `MEM0_API_KEY` | An LLM provider key |
+| LLM on the recall path | No — cosine similarity + FTS5, both local | Yes — LLM involved in storing and recalling | Yes — hosted LLM involved in storing and recalling | Yes — LLM traverses/summarizes the graph |
+| Install footprint | `pip install localmem-mcp` / `uvx localmem-mcp`, no other services | Docker Compose stack (API + vector DB) | Package + a hosted Mem0 account | Self-hosted graph DB + LLM, or hosted Zep Cloud |
+| Datastore | One SQLite file | Qdrant (vector DB) + a history DB | Mem0's hosted store | Neo4j / FalkorDB (graph DB) |
+
+Based on each project's own setup docs as of August 2026 — verify against
+their READMEs before deciding, since requirements like these change fast.
+None of this makes the others *wrong*: a temporal knowledge graph or
+LLM-extracted facts are real capabilities localmem-mcp doesn't have. The
+trade is deliberate — this project stays a SQLite file and an embedding
+model, on purpose, rather than growing into an agent framework or a hosted
+service. See [ROADMAP.md](ROADMAP.md) for where the line is drawn.
 
 ## Architecture
 
@@ -147,6 +170,16 @@ startup near-instant for clients that spawn it eagerly.
 | `LOCALMEM_MODEL` | `BAAI/bge-small-en-v1.5` | Any model name supported by fastembed. |
 
 Point separate projects at separate databases with `--db` or `LOCALMEM_DB_PATH`.
+
+## Star History
+
+<a href="https://star-history.com/#OpenAgentHQ/localmem-mcp&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=OpenAgentHQ/localmem-mcp&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=OpenAgentHQ/localmem-mcp&type=Date" />
+    <img alt="Star History Chart for OpenAgentHQ/localmem-mcp" src="https://api.star-history.com/svg?repos=OpenAgentHQ/localmem-mcp&type=Date" width="600">
+  </picture>
+</a>
 
 ## Contributing
 

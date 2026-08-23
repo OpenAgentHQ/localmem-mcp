@@ -68,11 +68,11 @@ A few things that will save you time:
 
 1. Branch off `main`.
 2. Make the change, with a test.
-3. Run `pytest -q` and `ruff check .`.
+3. Run `pytest -q`, `mypy --strict src/localmem_mcp`, and `ruff check .`.
 4. Open a PR. The template will ask you a few questions — the "things reviewers
    should know" section is the important part.
 
-CI runs on every PR: ruff, the test suite across Python 3.10–3.13 on Linux,
+CI runs on every PR: ruff, mypy strict type checking, the test suite (with coverage gating) across Python 3.10–3.13 on Linux,
 macOS, and Windows, a job that runs everything against real fastembed
 embeddings, and a packaging check. All of it must be green to merge.
 
@@ -101,6 +101,22 @@ For MCP-level tests, drive the tools through `fastmcp.Client(server)` as
 `tests/test_server.py` does — that's the same path a real client takes, so it
 catches schema and serialization problems that calling the functions directly
 would miss.
+
+## Type checking and Coverage
+
+### Type Checking
+
+Run `mypy --strict src/localmem_mcp` before opening a PR. All code in `src/localmem_mcp` must pass strict mode without blanket suppressions. Strict type checking is enforced in CI via the `type-check` job.
+
+### Coverage
+
+Run tests with coverage locally:
+
+```bash
+.venv/bin/python -m pytest --cov=localmem_mcp --cov-report=term-missing
+```
+
+The codebase maintains a coverage floor (currently **90%**, configured via `[tool.coverage.report] fail_under` in `pyproject.toml`). CI will fail if coverage falls below this floor. The floor serves as a regression guard to prevent coverage loss on new changes, rather than an aspirational target to chase.
 
 ## Benchmarks
 

@@ -1,0 +1,36 @@
+name: CodeQL
+
+# Static analysis (SAST) for the Python source. Runs on every push to main,
+# every PR, and weekly so newly-disclosed query patterns still catch
+# vulnerabilities in code that hasn't changed.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (python)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@67ba681cdcbc95ed0371c210ccf82c4d968ae5eb # v3.37.7
+        with:
+          languages: python
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@67ba681cdcbc95ed0371c210ccf82c4d968ae5eb # v3.37.7
+        with:
+          category: "/language:python"

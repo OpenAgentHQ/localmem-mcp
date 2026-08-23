@@ -14,9 +14,7 @@ def _days_arg(value: str) -> int:
     text = str(value).strip().lower()
     match = re.fullmatch(r"(\d+)([dw]?)", text)
     if not match:
-        raise argparse.ArgumentTypeError(
-            f"invalid duration {value!r} (use e.g. 90, 90d, or 8w)"
-        )
+        raise argparse.ArgumentTypeError(f"invalid duration {value!r} (use e.g. 90, 90d, or 8w)")
     days = int(match.group(1))
     if match.group(2) == "w":
         days *= 7
@@ -78,6 +76,38 @@ def _build_parser() -> argparse.ArgumentParser:
     recall.add_argument("memory_id", nargs="?", type=int)
     recall.add_argument("-n", "--limit", type=int, default=5)
 
+    list_cmd = sub.add_parser(
+        "list",
+        parents=[common],
+        help="List memories with tag filtering, ordering, and pagination",
+    )
+    list_cmd.add_argument(
+        "-n",
+        "--limit",
+        type=int,
+        default=20,
+        help="Maximum memories to return (default: 20)",
+    )
+    list_cmd.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="Number of memories to skip (default: 0)",
+    )
+    list_cmd.add_argument(
+        "--tag",
+        action="append",
+        dest="tags",
+        default=[],
+        help="Tag filter (repeatable — all must match)",
+    )
+    list_cmd.add_argument(
+        "--order",
+        choices=["newest", "oldest"],
+        default="newest",
+        help="Sort order: newest or oldest (default: newest)",
+    )
+
     forget = sub.add_parser(
         "forget",
         parents=[common],
@@ -110,9 +140,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Skip the confirmation prompt for bulk deletes",
     )
 
-    export = sub.add_parser(
-        "export", parents=[common], help="Write memories to stdout as JSONL"
-    )
+    export = sub.add_parser("export", parents=[common], help="Write memories to stdout as JSONL")
     export.add_argument(
         "--tag",
         action="append",
@@ -126,9 +154,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Include the stored vectors (larger file, tied to one model)",
     )
 
-    importer = sub.add_parser(
-        "import", parents=[common], help="Read JSONL and store each memory"
-    )
+    importer = sub.add_parser("import", parents=[common], help="Read JSONL and store each memory")
     importer.add_argument(
         "path",
         nargs="?",

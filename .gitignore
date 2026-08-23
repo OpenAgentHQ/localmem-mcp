@@ -225,3 +225,8 @@ __marimo__/
 
 # mkdocs
 site/
+
+#agents
+.opencode/
+.claude/
+.tmp/

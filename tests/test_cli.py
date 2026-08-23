@@ -336,13 +336,9 @@ def test_export_import_round_trip_through_files(tmp_path, capsys, _offline):
 
     assert "imported 2 memories" in capsys.readouterr().out
     with MemoryStore(db_path=fresh_db, embedder=StubEmbedder()) as s:
-        restored = [
-            {k: v for k, v in r.items() if k != "id"} for r in s.export_records()
-        ]
+        restored = [{k: v for k, v in r.items() if k != "id"} for r in s.export_records()]
     with MemoryStore(db_path=source_db, embedder=StubEmbedder()) as s:
-        original = [
-            {k: v for k, v in r.items() if k != "id"} for r in s.export_records()
-        ]
+        original = [{k: v for k, v in r.items() if k != "id"} for r in s.export_records()]
     assert restored == original
 
 
@@ -417,3 +413,60 @@ def test_import_missing_file_exits_two(tmp_path, capsys, _offline):
     assert main(["--db", str(db), "import", str(tmp_path / "nope.jsonl")]) == 2
 
     assert "cannot read" in capsys.readouterr().err
+
+
+# -- list ------------------------------------------------------------------
+
+
+def test_list_command_text_output(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    _add_memory(db, "first note")
+    _add_memory(db, "second note")
+
+    assert main(["--db", str(db), "list"]) == 0
+
+    out = capsys.readouterr().out
+    assert "second note" in out
+    assert "first note" in out
+
+
+def test_list_command_empty_store_text_output(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+
+    assert main(["--db", str(db), "list"]) == 0
+
+    assert "no memories found" in capsys.readouterr().out
+
+
+def test_list_command_json_output(tmp_path, capsys):
+    db = tmp_path / "cli.db"
+    _add_memory(db, "work note 1", tags=["work"])
+    _add_memory(db, "work note 2", tags=["work"])
+    _add_memory(db, "personal note", tags=["personal"])
+
+    assert (
+        main(
+            [
+                "--db",
+                str(db),
+                "--json",
+                "list",
+                "--tag",
+                "work",
+                "-n",
+                "1",
+                "--order",
+                "oldest",
+            ]
+        )
+        == 0
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["count"] == 1
+    assert payload["total"] == 2
+    assert payload["limit"] == 1
+    assert payload["offset"] == 0
+    assert payload["order"] == "oldest"
+    assert payload["tags"] == ["work"]
+    assert payload["memories"][0]["content"] == "work note 1"

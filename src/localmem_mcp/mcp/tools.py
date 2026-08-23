@@ -6,12 +6,52 @@ when not to, because that text is what an MCP client shows the model.
 
 from __future__ import annotations
 
-from typing import Any
+import functools
+import logging
+from collections.abc import Callable
+from typing import Any, TypeVar
+
+from fastmcp.exceptions import ToolError
 
 from .app import get_store, mcp
 
+logger = logging.getLogger(__name__)
+
+_F = TypeVar("_F", bound=Callable[..., dict[str, Any]])
+
+
+def _tool_boundary(fn: _F) -> _F:
+    """Turn store failures into a `ToolError` the calling model can act on.
+
+    A `ValueError` from `MemoryStore` (bad input the caller can fix — empty
+    content, an unknown order, an unfiltered bulk delete) is expected misuse:
+    its message is already written for a human, so it's surfaced as-is.
+
+    Anything else (a locked database, a failed model load, a bug) is
+    infrastructure failure the caller can't act on. It's logged via the
+    standard `logging` module — which, unconfigured, falls back to stderr
+    and never stdout, where it would corrupt the stdio JSON-RPC stream — and
+    replaced with a generic message that doesn't leak internals.
+    """
+
+    @functools.wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        try:
+            return fn(*args, **kwargs)
+        except ValueError as exc:
+            raise ToolError(str(exc)) from exc
+        except Exception as exc:
+            logger.error("tool %r failed unexpectedly", fn.__name__, exc_info=True)
+            raise ToolError(
+                f"{fn.__name__} failed unexpectedly due to a local error, not "
+                "anything wrong with the request. Retrying is unlikely to help."
+            ) from exc
+
+    return wrapper  # type: ignore[return-value]
+
 
 @mcp.tool
+@_tool_boundary
 def store_memory(
     content: str,
     tags: list[str] | None = None,
@@ -36,6 +76,7 @@ def store_memory(
 
 
 @mcp.tool
+@_tool_boundary
 def search_memory(
     query: str,
     limit: int = 5,
@@ -75,6 +116,7 @@ def search_memory(
 
 
 @mcp.tool
+@_tool_boundary
 def recall_memory(memory_id: int | None = None, limit: int = 5) -> dict[str, Any]:
     """Re-read a specific memory by id, or the most recent memories.
 
@@ -105,6 +147,44 @@ def recall_memory(memory_id: int | None = None, limit: int = 5) -> dict[str, Any
 
 
 @mcp.tool
+@_tool_boundary
+def list_memories(
+    tags: list[str] | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    order: str = "newest",
+) -> dict[str, Any]:
+    """Enumerate memories with tag filtering, ordering, and pagination.
+
+    Use this to browse stored memories without requiring a search query — to
+    audit memories, paginate through tag categories, or view memories in
+    chronological or reverse-chronological order.
+
+    Filtering and ordering only — no embedding model or scoring is used.
+
+    Args:
+        tags: Only consider memories carrying all of these tags.
+        limit: Maximum number of memories to return (default: 20).
+        offset: Skip this many matching memories before returning `limit` of them.
+        order: Sort order: "newest" (default) or "oldest".
+
+    Returns:
+        Matching memories, total count matching the filters, pagination details, and order.
+    """
+    memories, total = get_store().list(tags=tags, limit=limit, offset=offset, order=order)
+    return {
+        "count": len(memories),
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+        "order": order,
+        "tags": list(tags) if tags else [],
+        "memories": [memory.to_dict() for memory in memories],
+    }
+
+
+@mcp.tool
+@_tool_boundary
 def update_memory(
     memory_id: int,
     content: str | None = None,
@@ -128,15 +208,14 @@ def update_memory(
     Returns:
         The corrected memory, or {"found": false} if the id doesn't exist.
     """
-    memory = get_store().update(
-        memory_id=memory_id, content=content, tags=tags, source=source
-    )
+    memory = get_store().update(memory_id=memory_id, content=content, tags=tags, source=source)
     if memory is None:
         return {"found": False, "memory_id": memory_id, "memory": None}
     return {"found": True, "memory_id": memory_id, "memory": memory.to_dict()}
 
 
 @mcp.tool
+@_tool_boundary
 def forget_memory(memory_id: int) -> dict[str, Any]:
     """Permanently delete one memory by id.
 
@@ -158,6 +237,7 @@ def forget_memory(memory_id: int) -> dict[str, Any]:
 
 
 @mcp.tool
+@_tool_boundary
 def forget_memories(
     tags: list[str] | None = None,
     older_than_days: int | None = None,
@@ -185,6 +265,7 @@ def forget_memories(
 
 
 @mcp.tool
+@_tool_boundary
 def memory_stats() -> dict[str, Any]:
     """Report where memories are stored, how many there are, and which model is used."""
     return get_store().stats()
