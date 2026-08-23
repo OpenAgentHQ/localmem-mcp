@@ -215,13 +215,32 @@ class MemoryStore:
     ) -> list[Memory]:
         """Most recently stored memories, newest first."""
         tag_list = _normalize_tags(tags)
-        rows = self._conn.execute(
-            "SELECT * FROM memories ORDER BY id DESC LIMIT ?",
-            (max(1, limit) * (10 if tag_list else 1),),
-        ).fetchall()
-        memories = [_row_to_memory(row) for row in rows]
-        if tag_list:
-            memories = [m for m in memories if _has_tags(m, tag_list)]
+        batch_size = max(1, limit) * 10
+        offset = 0
+        memories: list[Memory] = []
+
+        while True:
+            rows = self._conn.execute(
+                """
+                SELECT * FROM memories
+                ORDER BY id DESC
+                LIMIT ? OFFSET ?
+                """,
+                (batch_size, offset),
+            ).fetchall()
+
+            if not rows:
+                break
+
+            for row in rows:
+                memory = _row_to_memory(row)
+                if not tag_list or _has_tags(memory, tag_list):
+                    memories.append(memory)
+                    if len(memories) >= max(0, limit):
+                        return memories[:limit]
+
+            offset += batch_size
+
         return memories[:limit]
 
     def search(

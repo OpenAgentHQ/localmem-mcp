@@ -201,6 +201,18 @@ def test_recent_filters_by_tags(store):
     assert len(recent) == 1
     assert recent[0].content == "tagged memory"
 
+def test_recent_tagged_memory_outside_fetch_window(store):
+    store.add("the tagged one", tags=["keep"])
+
+    for i in range(60):
+        store.add(f"untagged memory {i}")
+
+    recent = store.recent(limit=5, tags=["keep"])
+
+    assert len(recent) == 1
+    assert recent[0].content == "the tagged one"
+    assert recent[0].tags == ["keep"] 
+
 
 def test_delete_removes_memory(store):
     memory = store.add("temporary note about tea")
