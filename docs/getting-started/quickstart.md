@@ -34,7 +34,8 @@ To confirm it's connected, ask your agent:
 
 > "What memory tools do you have available?"
 
-It should list `store_memory`, `search_memory`, and `recall_memory`.
+It should list `store_memory`, `search_memory`, `recall_memory`, `list_memories`,
+`update_memory`, `forget_memory`, `forget_memories`, and `memory_stats`.
 
 ## 3. Store something
 
